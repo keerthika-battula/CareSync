@@ -58,3 +58,17 @@ caresync:
     bucket-name: caresync-docs
   firebase:
     credentials-path: ${FIREBASE_CREDENTIALS:classpath:firebase-service-account.json}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    mail:
+      enabled: false
