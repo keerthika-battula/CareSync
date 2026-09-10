@@ -17,6 +17,7 @@ import java.util.UUID;
 public class AdminUserResponse {
     private UUID id;
     private String email;
+    private String username;
     private String firstName;
     private String lastName;
     private String phoneNumber;
@@ -30,6 +31,7 @@ public class AdminUserResponse {
         return AdminUserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
+                .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .phoneNumber(user.getPhoneNumber())

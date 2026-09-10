@@ -258,4 +258,133 @@ class AuthenticationSecurityHardeningIntegrationTest {
         // Password hash must be bcrypt of Password123!, not $2a$fakeHash
         assertTrue(passwordEncoder.matches("Password123!", registered.getPasswordHash()));
     }
+
+    @Test
+    @DisplayName("User can register with unique username and login using username (case-insensitive)")
+    void testRegisterAndLoginWithUsername_Success() throws Exception {
+        String regBody = """
+                {
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "johndoe@caresync.test",
+                    "username": "john_doe99",
+                    "password": "Password123!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(regBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.user.username").value("john_doe99"));
+
+        // Login with uppercase/mixed-case username
+        String loginBody = """
+                {
+                    "email": "JOHN_DOE99",
+                    "password": "Password123!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accessToken").isString())
+                .andExpect(jsonPath("$.data.user.username").value("john_doe99"));
+    }
+
+    @Test
+    @DisplayName("Registration with duplicate email returns HTTP 409 Conflict")
+    void testRegisterDuplicateEmail_Returns409() throws Exception {
+        String regBody = """
+                {
+                    "firstName": "Duplicate",
+                    "lastName": "User",
+                    "email": "active.user@caresync.test",
+                    "password": "Password123!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(regBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Email is already registered"));
+    }
+
+    @Test
+    @DisplayName("Registration with duplicate username returns HTTP 409 Conflict")
+    void testRegisterDuplicateUsername_Returns409() throws Exception {
+        // Register first user with username "test_user_unique"
+        String regBody1 = """
+                {
+                    "firstName": "User1",
+                    "lastName": "Test",
+                    "email": "user1@caresync.test",
+                    "username": "test_user_unique",
+                    "password": "Password123!"
+                }
+                """;
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(regBody1))
+                .andExpect(status().isCreated());
+
+        // Attempt second registration with same username (different case)
+        String regBody2 = """
+                {
+                    "firstName": "User2",
+                    "lastName": "Test",
+                    "email": "user2@caresync.test",
+                    "username": "TEST_USER_UNIQUE",
+                    "password": "Password123!"
+                }
+                """;
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(regBody2))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Username is already taken"));
+    }
+
+    @Test
+    @DisplayName("Invalid login returns security-safe generic error message")
+    void testInvalidLogin_ReturnsSecuritySafeMessage() throws Exception {
+        String invalidPass = """
+                {
+                    "email": "active.user@caresync.test",
+                    "password": "WrongPassword!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidPass))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Invalid email/username or password."));
+    }
+
+    @Test
+    @DisplayName("Designated production admin emails automatically receive Role.ADMIN upon registration")
+    void testDesignatedAdminRegistration_ReceivesAdminRole() throws Exception {
+        String adminRegBody = """
+                {
+                    "firstName": "Keerthika",
+                    "lastName": "Battula",
+                    "email": "battula.keerthika0@gmail.com",
+                    "password": "SecurePassword123!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(adminRegBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.user.role").value("ADMIN"));
+
+        User created = userRepository.findByEmail("battula.keerthika0@gmail.com").orElseThrow();
+        assertEquals(Role.ADMIN, created.getRole());
+    }
 }

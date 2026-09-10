@@ -17,6 +17,12 @@ public class RegisterRequest {
     @Email(message = "Invalid email format")
     private String email;
 
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^[a-zA-Z0-9_]{3,30}$",
+        message = "Username must be 3-30 characters and contain only letters, numbers, and underscores"
+    )
+    private String username;
+
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;

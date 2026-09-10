@@ -23,6 +23,9 @@ public class User extends BaseEntity implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(unique = true, length = 50)
+    private String username;
+
     @Column(nullable = false)
     private String passwordHash;
 
@@ -59,7 +62,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return (username != null && !username.trim().isEmpty()) ? username : email;
     }
 
     @Override

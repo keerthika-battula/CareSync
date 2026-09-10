@@ -123,9 +123,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
-      String errorMessage = 'Login failed. Please check your credentials.';
+      String errorMessage = 'Invalid email/username or password.';
       if (e is DioException && e.response?.data != null && e.response?.data is Map) {
-        errorMessage = (e.response!.data as Map)['message']?.toString() ?? errorMessage;
+        final serverMsg = (e.response!.data as Map)['message']?.toString();
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          errorMessage = serverMsg;
+        }
       }
       state = state.copyWith(
         isLoading: false,
@@ -135,7 +138,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> register(String firstName, String lastName, String email, String password) async {
+  Future<bool> register(String firstName, String lastName, String email, String password, {String? username}) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final dio = ref.read(dioProvider);
@@ -143,37 +146,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
+        username: username?.trim(),
         password: password,
       );
-      final response = await dio.post('/auth/register', data: req.toJson());
-
-      final authData = AuthResponse.fromJson(response.data);
-      final storage = ref.read(secureStorageProvider);
-
-      await storage.saveAccessToken(authData.accessToken);
-      await storage.saveRefreshToken(authData.refreshToken);
-
-      UserModel? user = authData.user;
-      if (user == null) {
-        final meRes = await dio.get('/v1/users/me');
-        user = UserModel.fromJson(meRes.data['data']);
-      }
-
-      await storage.saveUserId(user.id);
-      await storage.saveUserRole(user.role);
-      await storage.saveUserName(user.fullName);
-      await storage.saveUserEmail(user.email);
+      await dio.post('/auth/register', data: req.toJson());
 
       state = state.copyWith(
         isLoading: false,
-        user: user,
-        isInitialized: true,
       );
       return true;
     } catch (e) {
       String errorMessage = 'Registration failed. Please try again.';
-      if (e is DioException && e.response?.data != null && e.response?.data is Map) {
-        errorMessage = (e.response!.data as Map)['message']?.toString() ?? errorMessage;
+      if (e is DioException) {
+        if (e.response?.statusCode == 409) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (e.response?.data != null && e.response?.data is Map) {
+          errorMessage = (e.response!.data as Map)['message']?.toString() ?? errorMessage;
+        }
       }
       state = state.copyWith(
         isLoading: false,

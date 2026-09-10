@@ -37,8 +37,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({UnauthorizedException.class, AuthenticationException.class})
     public ResponseEntity<ApiResponse<?>> handleUnauthorizedException(RuntimeException ex) {
         log.warn("Unauthorized: {}", ex.getMessage());
+        String msg = (ex instanceof org.springframework.security.authentication.BadCredentialsException
+                || (ex.getMessage() != null && ex.getMessage().equalsIgnoreCase("Bad credentials")))
+                ? "Invalid email/username or password."
+                : ex.getMessage();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(msg));
     }
 
     @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class, SecurityException.class})

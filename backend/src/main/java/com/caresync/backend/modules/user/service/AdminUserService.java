@@ -62,8 +62,17 @@ public class AdminUserService {
 
     @Transactional
     public AdminUserResponse createUser(AdminCreateUserRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = request.getEmail() != null ? request.getEmail().trim() : "";
+        if (userRepository.existsByEmail(email) || userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Email is already registered");
+        }
+
+        String username = request.getUsername() != null && !request.getUsername().trim().isEmpty()
+                ? request.getUsername().trim().toLowerCase()
+                : null;
+
+        if (username != null && userRepository.existsByUsernameIgnoreCase(username)) {
+            throw new ConflictException("Username is already taken");
         }
 
         Role role = request.getRole() != null ? request.getRole() : Role.USER;
@@ -72,6 +81,7 @@ public class AdminUserService {
                 .firstName(request.getFirstName().trim())
                 .lastName(request.getLastName().trim())
                 .email(request.getEmail().trim().toLowerCase())
+                .username(username)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber().trim() : null)
                 .role(role)

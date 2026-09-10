@@ -35,11 +35,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _openForgotPassword() async {
+    final text = _emailCtrl.text.trim();
+    final initialEmail = text.contains('@') ? text : null;
     final resetEmail = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => ForgotPasswordDialog(
-        initialEmail: _emailCtrl.text.trim(),
+        initialEmail: initialEmail,
       ),
     );
 
@@ -122,20 +124,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 28),
 
-                      // Email Field
+                      // Email or Username Field
                       TextFormField(
                         controller: _emailCtrl,
-                        keyboardType: TextInputType.emailAddress,
+                        keyboardType: TextInputType.text,
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
-                          labelText: 'Email Address',
-                          hintText: 'name@example.com',
-                          prefixIcon: const Icon(Icons.email_outlined),
+                          labelText: 'Email or Username',
+                          hintText: 'Enter your email or username',
+                          prefixIcon: const Icon(Icons.person_outline),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Email is required';
-                          if (!v.contains('@')) return 'Enter a valid email';
+                          if (v == null || v.trim().isEmpty) return 'Email or username is required';
+                          if (v.trim().length < 3) return 'Must be at least 3 characters';
                           return null;
                         },
                       ),

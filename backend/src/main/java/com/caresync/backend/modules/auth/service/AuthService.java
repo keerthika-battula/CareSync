@@ -5,6 +5,7 @@ import com.caresync.backend.common.exception.ConflictException;
 import com.caresync.backend.modules.auth.dto.*;
 import com.caresync.backend.modules.auth.entity.PasswordResetToken;
 import com.caresync.backend.modules.auth.entity.User;
+import com.caresync.backend.modules.auth.model.Role;
 import com.caresync.backend.modules.auth.repository.PasswordResetTokenRepository;
 import com.caresync.backend.modules.auth.repository.UserRepository;
 import com.caresync.backend.security.JwtService;
@@ -40,17 +41,39 @@ public class AuthService {
     @Value("${caresync.auth.password-reset.cooldown-seconds:60}")
     private int resendCooldownSeconds;
 
+    private static final java.util.Set<String> DESIGNATED_ADMIN_EMAILS = java.util.Set.of(
+            "battula.keerthika0@gmail.com",
+            "m.mohithreddy99@gmail.com"
+    );
+
+    private boolean isDesignatedAdmin(String email) {
+        return email != null && DESIGNATED_ADMIN_EMAILS.contains(email.trim().toLowerCase());
+    }
+
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new ConflictException("Email is already registered");
         }
 
+        String username = request.getUsername() != null && !request.getUsername().trim().isEmpty()
+                ? request.getUsername().trim().toLowerCase()
+                : null;
+
+        if (username != null && userRepository.existsByUsernameIgnoreCase(username)) {
+            throw new ConflictException("Username is already taken");
+        }
+
+        Role initialRole = isDesignatedAdmin(email) ? Role.ADMIN : Role.USER;
+
         User user = User.builder()
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
-                .email(request.getEmail())
+                .firstName(request.getFirstName().trim())
+                .lastName(request.getLastName().trim())
+                .email(email)
+                .username(username)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .role(initialRole)
                 .isActive(true)
                 .isEmailVerified(false)
                 .build();
@@ -64,12 +87,13 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        String identifier = request.getEmail() != null ? request.getEmail().trim() : "";
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(identifier, request.getPassword())
         );
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow();
+        User user = userRepository.findByEmailOrUsernameIgnoreCase(identifier)
+                .orElseThrow(() -> new BadRequestException("Invalid email/username or password."));
 
         String jwtToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
@@ -173,6 +197,7 @@ public class AuthService {
                 .user(AuthResponse.UserDto.builder()
                         .id(user.getId())
                         .email(user.getEmail())
+                        .username(user.getUsername())
                         .firstName(user.getFirstName())
                         .lastName(user.getLastName())
                         .role(user.getRole() != null ? user.getRole().name() : "USER")

@@ -68,7 +68,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       _passwordController.text,
     );
     if (success && mounted) {
-      context.go('/dashboard');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Account created successfully. Please sign in.'),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      context.go('/login');
     }
   }
 

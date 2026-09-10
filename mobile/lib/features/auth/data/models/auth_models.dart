@@ -9,14 +9,28 @@ class RegisterRequest {
   final String firstName;
   final String lastName;
   final String email;
+  final String? username;
   final String password;
-  RegisterRequest({required this.firstName, required this.lastName, required this.email, required this.password});
-  Map<String, dynamic> toJson() => {'firstName': firstName, 'lastName': lastName, 'email': email, 'password': password};
+  RegisterRequest({
+    required this.firstName,
+    required this.lastName,
+    required this.email,
+    this.username,
+    required this.password,
+  });
+  Map<String, dynamic> toJson() => {
+    'firstName': firstName,
+    'lastName': lastName,
+    'email': email,
+    if (username != null && username!.isNotEmpty) 'username': username,
+    'password': password,
+  };
 }
 
 class UserModel {
   final String id;
   final String email;
+  final String? username;
   final String firstName;
   final String lastName;
   final String role;
@@ -25,6 +39,7 @@ class UserModel {
   UserModel({
     required this.id,
     required this.email,
+    this.username,
     required this.firstName,
     required this.lastName,
     required this.role,
@@ -38,6 +53,7 @@ class UserModel {
     return UserModel(
       id: json['id']?.toString() ?? '',
       email: json['email'] ?? '',
+      username: json['username'],
       firstName: json['firstName'] ?? json['first_name'] ?? '',
       lastName: json['lastName'] ?? json['last_name'] ?? '',
       role: json['role'] ?? 'USER',
@@ -48,6 +64,7 @@ class UserModel {
   Map<String, dynamic> toJson() => {
     'id': id,
     'email': email,
+    if (username != null) 'username': username,
     'firstName': firstName,
     'lastName': lastName,
     'role': role,

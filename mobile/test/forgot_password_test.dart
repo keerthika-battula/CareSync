@@ -14,6 +14,18 @@ void main() {
   }
 
   group('Forgot Password UI & Validation Tests', () {
+    testWidgets('LoginScreen displays Email or Username field', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createTestWidget(const LoginScreen()));
+      await tester.pump();
+
+      expect(find.text('Email or Username'), findsOneWidget);
+    });
+
     testWidgets('LoginScreen displays Forgot Password link', (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
