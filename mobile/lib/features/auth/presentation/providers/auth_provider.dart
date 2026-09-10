@@ -188,4 +188,46 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await storage.clearAll();
     state = const AuthState(isInitialized: true);
   }
+
+  Future<String> requestPasswordReset(String email) async {
+    try {
+      final dio = ref.read(dioProvider);
+      final response = await dio.post(
+        '/auth/forgot-password',
+        data: {'email': email.trim()},
+      );
+      final message = response.data['message']?.toString() ??
+          'If the account exists, a password reset code has been sent.';
+      return message;
+    } catch (e) {
+      String errorMessage = 'Failed to send reset code. Please try again.';
+      if (e is DioException && e.response?.data != null && e.response?.data is Map) {
+        errorMessage = (e.response!.data as Map)['message']?.toString() ?? errorMessage;
+      }
+      throw Exception(errorMessage);
+    }
+  }
+
+  Future<String> resetPassword(String email, String code, String newPassword) async {
+    try {
+      final dio = ref.read(dioProvider);
+      final response = await dio.post(
+        '/auth/reset-password',
+        data: {
+          'email': email.trim(),
+          'code': code.trim(),
+          'newPassword': newPassword,
+        },
+      );
+      final message = response.data['message']?.toString() ??
+          'Password has been reset successfully. Please sign in with your new password.';
+      return message;
+    } catch (e) {
+      String errorMessage = 'Failed to reset password. Please check your verification code.';
+      if (e is DioException && e.response?.data != null && e.response?.data is Map) {
+        errorMessage = (e.response!.data as Map)['message']?.toString() ?? errorMessage;
+      }
+      throw Exception(errorMessage);
+    }
+  }
 }

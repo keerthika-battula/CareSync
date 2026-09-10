@@ -16,3 +16,10 @@ logging:
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql: TRACE
+
+caresync:
+  mail:
+    dev-mode: true
+  auth:
+    password-reset:
+      cooldown-seconds: 10

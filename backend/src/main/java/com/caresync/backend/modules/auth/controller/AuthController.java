@@ -1,9 +1,7 @@
 package com.caresync.backend.modules.auth.controller;
 
 import com.caresync.backend.common.response.ApiResponse;
-import com.caresync.backend.modules.auth.dto.AuthResponse;
-import com.caresync.backend.modules.auth.dto.LoginRequest;
-import com.caresync.backend.modules.auth.dto.RegisterRequest;
+import com.caresync.backend.modules.auth.dto.*;
 import com.caresync.backend.modules.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,5 +27,17 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("If the account exists, a password reset code has been sent.", null));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Password has been reset successfully. Please sign in with your new password.", null));
     }
 }

@@ -41,31 +41,34 @@ class AppLogo extends StatelessWidget {
         ),
         if (showWordmark) ...[
           SizedBox(width: size * 0.3),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'CARESYNC',
-                style: TextStyle(
-                  fontSize: size * 0.52,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                  color: wordmarkColor ?? const Color(0xFF0F172A),
-                  height: 1.1,
-                ),
-              ),
-              if (subtitle != null)
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  subtitle!,
+                  'CARESYNC',
                   style: TextStyle(
-                    fontSize: size * 0.3,
-                    fontWeight: FontWeight.w500,
-                    color: (wordmarkColor ?? AppColors.textSecondary).withOpacity(0.8),
-                    letterSpacing: 0.2,
+                    fontSize: size * 0.52,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: wordmarkColor ?? const Color(0xFF0F172A),
+                    height: 1.1,
                   ),
                 ),
-            ],
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: size * 0.3,
+                      fontWeight: FontWeight.w500,
+                      color: (wordmarkColor ?? AppColors.textSecondary).withOpacity(0.8),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ],

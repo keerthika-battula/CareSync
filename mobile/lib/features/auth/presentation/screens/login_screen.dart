@@ -1,5 +1,6 @@
 import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
+import 'package:caresync/features/auth/presentation/widgets/forgot_password_dialog.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,11 +26,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  void _login() async {
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     final success = await ref.read(authProvider.notifier).login(_emailCtrl.text.trim(), _passCtrl.text);
     if (success && mounted) {
       context.go('/dashboard');
+    }
+  }
+
+  Future<void> _openForgotPassword() async {
+    final resetEmail = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => ForgotPasswordDialog(
+        initialEmail: _emailCtrl.text.trim(),
+      ),
+    );
+
+    if (resetEmail != null && resetEmail.isNotEmpty && mounted) {
+      setState(() {
+        _emailCtrl.text = resetEmail;
+        _passCtrl.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Password reset successfully! Please sign in with your new password.'),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
     }
   }
 
@@ -124,7 +158,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         validator: (v) => (v == null || v.isEmpty) ? 'Password is required' : null,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 8),
+
+                      // Forgot Password Link
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: authState.isLoading ? null : _openForgotPassword,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
                       if (authState.hasError) ...[
                         Container(
@@ -174,8 +230,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 20),
 
                       // Create Account Link
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           const Text(
                             "Don't have an account? ",
