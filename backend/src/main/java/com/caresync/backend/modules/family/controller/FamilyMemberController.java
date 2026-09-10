@@ -33,4 +33,11 @@ public class FamilyMemberController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Family member added successfully", member));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteFamilyMember(
+            Authentication auth, @PathVariable java.util.UUID id) {
+        familyMemberService.deleteFamilyMember(auth.getName(), id);
+        return ResponseEntity.ok(ApiResponse.success("Family member deleted successfully", null));
+    }
 }

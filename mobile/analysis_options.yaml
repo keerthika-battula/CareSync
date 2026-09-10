@@ -11,6 +11,9 @@ linter:
 analyzer:
   errors:
     invalid_annotation_target: ignore
+    deprecated_member_use: ignore
+    sort_constructors_first: ignore
+    sort_child_properties_last: ignore
   exclude:
     - build/**
     - android/**

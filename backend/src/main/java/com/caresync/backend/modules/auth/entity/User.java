@@ -6,6 +6,7 @@ import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.caresync.backend.modules.auth.model.Role;
 
 import java.util.Collection;
 import java.util.List;
@@ -34,14 +35,21 @@ public class User extends BaseEntity implements UserDetails {
     private String phoneNumber;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean isActive = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean isEmailVerified = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private com.caresync.backend.modules.auth.model.Role role = com.caresync.backend.modules.auth.model.Role.USER;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override

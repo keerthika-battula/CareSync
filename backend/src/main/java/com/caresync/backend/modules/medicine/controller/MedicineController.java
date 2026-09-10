@@ -26,11 +26,32 @@ public class MedicineController {
         return ResponseEntity.ok(ApiResponse.success(medicines));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<MedicineResponse>> getMedicineById(
+            Authentication auth, @PathVariable java.util.UUID id) {
+        MedicineResponse medicine = medicineService.getMedicineById(auth.getName(), id);
+        return ResponseEntity.ok(ApiResponse.success(medicine));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<MedicineResponse>> addMedicine(
             Authentication auth, @Valid @RequestBody MedicineRequest request) {
         MedicineResponse medicine = medicineService.addMedicine(auth.getName(), request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Medicine added successfully", medicine));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<MedicineResponse>> updateMedicine(
+            Authentication auth, @PathVariable java.util.UUID id, @Valid @RequestBody MedicineRequest request) {
+        MedicineResponse medicine = medicineService.updateMedicine(auth.getName(), id, request);
+        return ResponseEntity.ok(ApiResponse.success("Medicine updated successfully", medicine));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteMedicine(
+            Authentication auth, @PathVariable java.util.UUID id) {
+        medicineService.deleteMedicine(auth.getName(), id);
+        return ResponseEntity.ok(ApiResponse.success("Medicine deleted successfully", null));
     }
 }

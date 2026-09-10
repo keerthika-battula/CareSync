@@ -45,6 +45,18 @@ public class FamilyMemberService {
         return mapToResponse(saved);
     }
 
+    @Transactional
+    public void deleteFamilyMember(String email, UUID id) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        FamilyMember member = familyMemberRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Family member not found"));
+        if (!member.getUser().getId().equals(user.getId())) {
+            throw new com.caresync.backend.common.exception.ForbiddenException("Unauthorized to delete this family member");
+        }
+        familyMemberRepository.delete(member);
+    }
+
     private FamilyMemberResponse mapToResponse(FamilyMember member) {
         return FamilyMemberResponse.builder()
                 .id(member.getId())

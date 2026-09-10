@@ -1,4 +1,6 @@
+import 'package:caresync/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:caresync/features/appointments/presentation/screens/appointments_screen.dart';
+import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
 import 'package:caresync/features/auth/presentation/screens/login_screen.dart';
 import 'package:caresync/features/auth/presentation/screens/register_screen.dart';
 import 'package:caresync/features/auth/presentation/screens/splash_screen.dart';
@@ -12,10 +14,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+class _RiverpodRouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+  _RiverpodRouterNotifier(this._ref) {
+    _ref.listen(authProvider, (_, __) => notifyListeners());
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final routerNotifier = _RiverpodRouterNotifier(ref);
+
   return GoRouter(
     initialLocation: '/splash',
+    refreshListenable: routerNotifier,
     debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final authState = ref.read(authProvider);
+      final isSplash = state.matchedLocation == '/splash';
+      final isAuthRoute =
+          state.matchedLocation == '/login' || state.matchedLocation == '/register';
+
+      if (!authState.isInitialized) {
+        return isSplash ? null : '/splash';
+      }
+
+      if (!authState.isAuthenticated) {
+        return isAuthRoute ? null : '/login';
+      }
+
+      if (isSplash || isAuthRoute) {
+        return '/dashboard';
+      }
+
+      if (state.matchedLocation.startsWith('/admin') && !authState.isAdmin) {
+        return '/dashboard';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/splash',
@@ -64,6 +100,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/profile',
             name: 'profile',
             builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/admin',
+            name: 'admin',
+            builder: (context, state) => const AdminDashboardScreen(),
           ),
         ],
       ),

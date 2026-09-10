@@ -3,14 +3,20 @@
 # Environment files
 .env
 .env.*
+!.env.example
+*.env
 
 # OS specific files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
 # Logs
 *.log
 logs/
+log/
+backend/*.log
 
 # Docker
 docker-compose.override.yml
@@ -19,25 +25,49 @@ docker-compose.override.yml
 .idea/
 .vscode/
 *.iml
+*.iws
+*.ipr
+out/
 
-# Firebase credentials (ignored for security)
+# Secrets, certificates, and credentials
 firebase-service-account.json
+**/firebase-service-account*.json
 **/google-services.json
 **/GoogleService-Info.plist
+*.pem
+*.key
+*.p12
+*.jks
 
 # Build artifacts
 # Backend (Maven)
+target/
+**/target/
 backend/target/
-backend/*.log
+*.jar
+*.war
 
 # Flutter / Dart
+build/
+**/build/
 mobile/build/
+.dart_tool/
+**/.dart_tool/
 mobile/.dart_tool/
-mobile/.flutter-plugins
-mobile/.flutter-plugins-dependencies
-mobile/.packages
-mobile/.metadata
-mobile/.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+.metadata
+
+# Ephemeral build directories
+**/ephemeral/
+**/Flutter/ephemeral/
+mobile/ios/Flutter/ephemeral/
+mobile/macos/Flutter/ephemeral/
+mobile/linux/flutter/ephemeral/
+mobile/windows/flutter/ephemeral/
 
 # Platform specific build dirs
 mobile/ios/Flutter/Flutter.framework
@@ -47,9 +77,11 @@ mobile/macos/build/
 mobile/windows/build/
 
 # Gradle files (if any)
+.gradle/
+**/.gradle/
 mobile/.gradle/
-mobile/*.gradle
-mobile/**/*.gradle
+local.properties
+**/local.properties
 
 # Misc temporary files
 *.tmp

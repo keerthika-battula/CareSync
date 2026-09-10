@@ -1,158 +1,174 @@
 import 'package:caresync/core/constants/app_colors.dart';
+import 'package:caresync/features/appointments/presentation/providers/appointment_provider.dart';
+import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
+import 'package:caresync/features/family/presentation/providers/family_provider.dart';
+import 'package:caresync/features/medicines/presentation/providers/medicine_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final medsCount = ref.watch(medicineProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '-');
+    final apptsCount = ref.watch(appointmentProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '-');
+    final famCount = ref.watch(familyProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '-');
+
+    final displayName = user != null && user.fullName.trim().isNotEmpty
+        ? user.fullName.trim()
+        : 'CareSync Member';
+    final displayEmail = user?.email ?? '';
+    final role = user?.role.toUpperCase() ?? 'USER';
+    final isAdmin = role == 'ADMIN';
+
+    final initials = user != null && user.firstName.isNotEmpty
+        ? (user.firstName[0] + (user.lastName.isNotEmpty ? user.lastName[0] : '')).toUpperCase()
+        : 'CS';
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () {},
-          ),
-        ],
+        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
+        backgroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Profile header
+            // Profile Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [AppColors.primary, AppColors.primaryDark],
+                  colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
                 ),
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(32)),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
               ),
               child: Column(
                 children: [
-                  Stack(
+                  CircleAvatar(
+                    radius: 46,
+                    backgroundColor: Colors.white24,
+                    child: Text(
+                      initials,
+                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircleAvatar(
-                        radius: 48,
-                        backgroundColor: Colors.white24,
-                        child: Icon(Icons.person, size: 52, color: Colors.white),
+                      Text(
+                        displayName,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: AppColors.primary, width: 2),
-                          ),
-                          child: const Icon(Icons.camera_alt,
-                              size: 14, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isAdmin ? Colors.purpleAccent.withOpacity(0.3) : Colors.white24,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white38),
+                        ),
+                        child: Text(
+                          role,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'Jhansi',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
                   const SizedBox(height: 4),
                   Text(
-                    'jhansi@example.com',
+                    displayEmail,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.white70,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   // Quick stats
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _ProfileStat(label: 'Medicines', value: '4'),
-                      _VerticalDivider(),
-                      _ProfileStat(label: 'Appointments', value: '2'),
-                      _VerticalDivider(),
-                      _ProfileStat(label: 'Family', value: '4'),
+                      _ProfileStat(label: 'Medicines', value: medsCount),
+                      const _VerticalDivider(),
+                      _ProfileStat(label: 'Appointments', value: apptsCount),
+                      const _VerticalDivider(),
+                      _ProfileStat(label: 'Family Members', value: famCount),
                     ],
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
+
             // Settings sections
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel(label: 'Account'),
+                  const _SectionLabel(label: 'Account & Security'),
                   _SettingsTile(
-                    icon: Icons.person_outline,
-                    label: 'Account Settings',
-                    subtitle: 'Name, email, phone, DOB',
+                    icon: Icons.badge_outlined,
+                    label: 'User ID',
+                    subtitle: user?.id ?? 'Not available',
                     onTap: () {},
                   ),
                   _SettingsTile(
-                    icon: Icons.notifications_outlined,
-                    label: 'Notification Preferences',
-                    subtitle: 'Medicine reminders, appointment alerts',
+                    icon: Icons.shield_outlined,
+                    label: 'Account Role',
+                    subtitle: '$role (Access level managed by CareSync)',
                     onTap: () {},
                   ),
-                  _SettingsTile(
-                    icon: Icons.people_outlined,
-                    label: 'Family Management',
-                    subtitle: 'Add or manage family members',
-                    onTap: () {},
-                  ),
+                  if (isAdmin)
+                    _SettingsTile(
+                      icon: Icons.admin_panel_settings_outlined,
+                      label: 'Admin Console',
+                      subtitle: 'Open administrative user management',
+                      onTap: () => context.go('/admin'),
+                    ),
+
                   const SizedBox(height: 16),
-                  _SectionLabel(label: 'Security & Support'),
+                  const _SectionLabel(label: 'Application'),
                   _SettingsTile(
-                    icon: Icons.lock_outline,
-                    label: 'Privacy & Security',
-                    subtitle: 'Password, biometrics, data privacy',
-                    onTap: () {},
-                  ),
-                  _SettingsTile(
-                    icon: Icons.help_outline,
-                    label: 'Help & Support',
-                    subtitle: 'FAQs, contact support',
+                    icon: Icons.notifications_none,
+                    label: 'Notifications',
+                    subtitle: 'Medication alerts, reminders',
                     onTap: () {},
                   ),
                   _SettingsTile(
                     icon: Icons.info_outline,
                     label: 'About CareSync',
-                    subtitle: 'Version 1.0.0',
+                    subtitle: 'Version 2.0 • Healthcare PWA',
                     onTap: () {},
                   ),
                   const SizedBox(height: 24),
+
                   // Logout button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => _showLogoutDialog(context),
+                      onPressed: () => _showLogoutDialog(context, ref),
                       icon: const Icon(Icons.logout, color: AppColors.error),
                       label: const Text(
-                        'Logout',
-                        style: TextStyle(color: AppColors.error),
+                        'Sign Out',
+                        style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.error),
-                        minimumSize: const Size(double.infinity, 52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
@@ -166,24 +182,28 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout of CareSync?'),
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to sign out of CareSync?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: clear tokens and go to login
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) {
+                context.go('/login');
+              }
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Logout'),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -200,7 +220,7 @@ class _ProfileStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Column(
         children: [
           Text(
@@ -211,6 +231,7 @@ class _ProfileStat extends StatelessWidget {
               color: Colors.white,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             label,
             style: const TextStyle(fontSize: 11, color: Colors.white70),
@@ -222,12 +243,14 @@ class _ProfileStat extends StatelessWidget {
 }
 
 class _VerticalDivider extends StatelessWidget {
+  const _VerticalDivider();
+
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 36,
       width: 1,
-      color: Colors.white30,
+      color: Colors.white24,
     );
   }
 }
@@ -270,34 +293,31 @@ class _SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
       child: ListTile(
         onTap: onTap,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
-          width: 40,
-          height: 40,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.1),
+            color: AppColors.primary.withOpacity(0.08),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: AppColors.primary, size: 20),
         ),
         title: Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           subtitle,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.textLight),
+        trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textLight),
       ),
     );
   }

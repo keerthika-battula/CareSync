@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
-    @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class})
+    @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class, SecurityException.class})
     public ResponseEntity<ApiResponse<?>> handleForbiddenException(RuntimeException ex) {
         log.warn("Forbidden: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

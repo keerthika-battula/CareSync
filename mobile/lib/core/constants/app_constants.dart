@@ -1,11 +1,14 @@
+import 'package:flutter/foundation.dart';
+
 class AppConstants {
   AppConstants._();
 
   // API
-  static const String baseUrl = String.fromEnvironment(
-    'BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080',
-  );
+  static String get baseUrl {
+    const fromEnv = String.fromEnvironment('BASE_URL');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    return kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080';
+  }
   static const String apiPrefix = '/api';
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
@@ -14,6 +17,9 @@ class AppConstants {
   static const String accessTokenKey = 'access_token';
   static const String refreshTokenKey = 'refresh_token';
   static const String userIdKey = 'user_id';
+  static const String userRoleKey = 'user_role';
+  static const String userEmailKey = 'user_email';
+  static const String userNameKey = 'user_name';
 
   // App
   static const String appName = 'CareSync';

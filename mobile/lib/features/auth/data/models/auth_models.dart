@@ -14,14 +14,64 @@ class RegisterRequest {
   Map<String, dynamic> toJson() => {'firstName': firstName, 'lastName': lastName, 'email': email, 'password': password};
 }
 
+class UserModel {
+  final String id;
+  final String email;
+  final String firstName;
+  final String lastName;
+  final String role;
+  final bool isActive;
+
+  UserModel({
+    required this.id,
+    required this.email,
+    required this.firstName,
+    required this.lastName,
+    required this.role,
+    this.isActive = true,
+  });
+
+  String get fullName => '$firstName $lastName'.trim();
+  bool get isAdmin => role.toUpperCase() == 'ADMIN';
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id']?.toString() ?? '',
+      email: json['email'] ?? '',
+      firstName: json['firstName'] ?? json['first_name'] ?? '',
+      lastName: json['lastName'] ?? json['last_name'] ?? '',
+      role: json['role'] ?? 'USER',
+      isActive: json['active'] ?? json['isActive'] ?? true,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'email': email,
+    'firstName': firstName,
+    'lastName': lastName,
+    'role': role,
+    'isActive': isActive,
+  };
+}
+
 class AuthResponse {
   final String accessToken;
   final String refreshToken;
-  AuthResponse({required this.accessToken, required this.refreshToken});
+  final UserModel? user;
+
+  AuthResponse({
+    required this.accessToken,
+    required this.refreshToken,
+    this.user,
+  });
+
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] is Map<String, dynamic> ? json['data'] : json;
     return AuthResponse(
-      accessToken: json['data']['accessToken'] ?? '',
-      refreshToken: json['data']['refreshToken'] ?? '',
+      accessToken: data['accessToken'] ?? '',
+      refreshToken: data['refreshToken'] ?? '',
+      user: data['user'] != null ? UserModel.fromJson(data['user']) : null,
     );
   }
 }
