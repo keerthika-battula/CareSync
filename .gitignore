@@ -1,0 +1,57 @@
+# Root .gitignore for CareSync project
+# ==============================
+# Environment files
+.env
+.env.*
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+
+# Firebase credentials (ignored for security)
+firebase-service-account.json
+**/google-services.json
+**/GoogleService-Info.plist
+
+# Build artifacts
+# Backend (Maven)
+backend/target/
+backend/*.log
+
+# Flutter / Dart
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/.metadata
+mobile/.pub-cache/
+
+# Platform specific build dirs
+mobile/ios/Flutter/Flutter.framework
+mobile/android/app/build/
+mobile/linux/build/
+mobile/macos/build/
+mobile/windows/build/
+
+# Gradle files (if any)
+mobile/.gradle/
+mobile/*.gradle
+mobile/**/*.gradle
+
+# Misc temporary files
+*.tmp
+*.swp
+*~

@@ -1,0 +1,10 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="256" height="256" rx="64" fill="#E2E8F0"/>
+  <!-- The 'C' curve for CareSync and 'Sync' -->
+  <path d="M184 128C184 165 155 192 128 192C92 192 64 160 64 128C64 96 92 64 128 64C145 64 160 70 172 80" stroke="#1E293B" stroke-width="24" stroke-linecap="round"/>
+  <!-- Sync Arrow at top right of the 'C' -->
+  <path d="M172 80L148 76M172 80L176 104" stroke="#1E293B" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Medicine pill intersecting the sync -->
+  <rect x="110" y="110" width="40" height="80" rx="20" transform="rotate(-45 110 110)" fill="#4A6CF7"/>
+  <rect x="110" y="110" width="40" height="40" rx="20" transform="rotate(-45 110 110)" fill="#06B6D4"/>
+</svg>
