@@ -7,6 +7,9 @@ class AppConstants {
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('BASE_URL');
     if (fromEnv.isNotEmpty) return fromEnv;
+    if (kIsWeb && kReleaseMode) {
+      return 'https://caresync-4dfr.onrender.com';
+    }
     return kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080';
   }
   static const String apiPrefix = '/api';
