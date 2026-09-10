@@ -4,6 +4,9 @@ import 'package:caresync/features/appointments/presentation/providers/appointmen
 import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
 import 'package:caresync/features/medicines/data/models/medicine_models.dart';
 import 'package:caresync/features/medicines/presentation/providers/medicine_provider.dart';
+import 'package:caresync/features/reminders/data/models/reminder_models.dart';
+import 'package:caresync/features/reminders/presentation/providers/reminder_provider.dart';
+import 'package:caresync/features/reminders/presentation/widgets/medicine_dose_card.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -170,12 +173,12 @@ class DashboardScreen extends ConsumerWidget {
             _buildQuickHighlights(isDesktop, medicinesAsync, appointmentsAsync),
             const SizedBox(height: 28),
 
-            // Today's Medicines Section
+            // Today's Scheduled Medication Doses Section
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "Active Medications",
+                  "Today's Medications",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -245,14 +248,38 @@ class DashboardScreen extends ConsumerWidget {
                   );
                 }
 
+                final remindersAsync = ref.watch(reminderProvider);
+                final doses = remindersAsync.valueOrNull ?? [];
+
                 return Column(
-                  children: medicines.take(4).map((med) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10.0),
-                    child: _buildRealMedicineCard(med),
-                  )).toList(),
+                  children: medicines.take(4).map((med) {
+                    final matchingDose = doses.cast<ReminderOccurrenceModel?>().firstWhere(
+                          (d) => d?.medicineId == med.id,
+                          orElse: () => null,
+                        );
+
+                    if (matchingDose != null) {
+                      return MedicineDoseCard(dose: matchingDose);
+                    }
+
+                    final fallbackDose = ReminderOccurrenceModel(
+                      id: med.id,
+                      medicineId: med.id,
+                      medicineName: med.name,
+                      dosage: med.dosage,
+                      currentStock: med.currentQuantity,
+                      refillThreshold: med.refillThreshold,
+                      scheduledTime: DateTime.now().toIso8601String(),
+                      status: 'PENDING',
+                      snoozeCount: 0,
+                    );
+
+                    return MedicineDoseCard(dose: fallbackDose);
+                  }).toList(),
                 );
               },
             ),
+
 
             const SizedBox(height: 28),
 
@@ -502,89 +529,6 @@ class DashboardScreen extends ConsumerWidget {
             ),
           )
           .toList(),
-    );
-  }
-
-  Widget _buildRealMedicineCard(MedicineModel med) {
-    final isLow = med.isLowStock;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isLow ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: isLow ? const Color(0xFFFFFBEB) : const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              Icons.medication_rounded,
-              color: isLow ? Colors.amber.shade700 : AppColors.primary,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          // Medication name & details with softWrap and ellipsis
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  med.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                  ),
-                  softWrap: true,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  med.dosage ?? 'No dosage specified',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Stock badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: isLow ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '${med.currentQuantity} in stock',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: isLow ? const Color(0xFFB45309) : AppColors.success,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

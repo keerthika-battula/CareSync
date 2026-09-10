@@ -32,6 +32,10 @@ public class ReminderOccurrence extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime scheduledTime;
 
+    private LocalDateTime originalScheduledTime;
+
+    private LocalDateTime snoozedUntil;
+
     @Column(nullable = false)
     @Builder.Default
     private String status = "PENDING"; // PENDING, TAKEN, SKIPPED, SNOOZED

@@ -8,4 +8,7 @@ import java.time.LocalDateTime;
 
 public interface ReminderOccurrenceRepository extends JpaRepository<ReminderOccurrence, UUID> {
     List<ReminderOccurrence> findAllByUserIdAndScheduledTimeBetween(UUID userId, LocalDateTime start, LocalDateTime end);
+    List<ReminderOccurrence> findAllByUserIdAndScheduledTimeBetweenOrderByScheduledTimeAsc(UUID userId, LocalDateTime start, LocalDateTime end);
+    List<ReminderOccurrence> findAllByMedicineIdOrderByScheduledTimeDesc(UUID medicineId);
+    boolean existsByMedicineIdAndScheduledTime(UUID medicineId, LocalDateTime scheduledTime);
 }

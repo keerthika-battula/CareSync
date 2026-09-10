@@ -1,6 +1,9 @@
 import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/features/medicines/data/models/medicine_models.dart';
 import 'package:caresync/features/medicines/presentation/providers/medicine_provider.dart';
+import 'package:caresync/features/reminders/data/models/reminder_models.dart';
+import 'package:caresync/features/reminders/presentation/providers/reminder_provider.dart';
+import 'package:caresync/features/reminders/presentation/widgets/medicine_dose_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,6 +20,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
   @override
   Widget build(BuildContext context) {
     final medicinesAsync = ref.watch(medicineProvider);
+    final remindersAsync = ref.watch(reminderProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -28,7 +32,10 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh medicines',
-            onPressed: () => ref.read(medicineProvider.notifier).loadMedicines(),
+            onPressed: () {
+              ref.read(medicineProvider.notifier).loadMedicines();
+              ref.read(reminderProvider.notifier).loadTodayDoses();
+            },
           ),
         ],
       ),
@@ -49,7 +56,10 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: () => ref.read(medicineProvider.notifier).loadMedicines(),
+                  onPressed: () {
+                    ref.read(medicineProvider.notifier).loadMedicines();
+                    ref.read(reminderProvider.notifier).loadTodayDoses();
+                  },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry'),
                 ),
@@ -66,6 +76,8 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
             final dosage = (med.dosage ?? '').toLowerCase();
             return name.contains(q) || notes.contains(q) || dosage.contains(q);
           }).toList();
+
+          final doses = remindersAsync.valueOrNull ?? [];
 
           return CustomScrollView(
             slivers: [
@@ -130,7 +142,38 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final med = filtered[index];
-                        return _buildMedCard(med);
+                        // Find today's dose for this medicine if available
+                        final matchingDose = doses.cast<ReminderOccurrenceModel?>().firstWhere(
+                              (d) => d?.medicineId == med.id,
+                              orElse: () => null,
+                            );
+
+                        if (matchingDose != null) {
+                          return MedicineDoseCard(
+                            dose: matchingDose,
+                            onEdit: () => _showAddEditMedicineDialog(existing: med),
+                            onDelete: () => _confirmDeleteMedicine(med),
+                          );
+                        }
+
+                        // Fallback synthesized dose card representation
+                        final fallbackDose = ReminderOccurrenceModel(
+                          id: med.id,
+                          medicineId: med.id,
+                          medicineName: med.name,
+                          dosage: med.dosage,
+                          currentStock: med.currentQuantity,
+                          refillThreshold: med.refillThreshold,
+                          scheduledTime: DateTime.now().toIso8601String(),
+                          status: 'PENDING',
+                          snoozeCount: 0,
+                        );
+
+                        return MedicineDoseCard(
+                          dose: fallbackDose,
+                          onEdit: () => _showAddEditMedicineDialog(existing: med),
+                          onDelete: () => _confirmDeleteMedicine(med),
+                        );
                       },
                       childCount: filtered.length,
                     ),
@@ -147,154 +190,6 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
         label: const Text('Add Medicine'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-      ),
-    );
-  }
-
-  Widget _buildMedCard(MedicineModel med) {
-    final isLow = med.isLowStock;
-    final color = isLow ? Colors.amber : Colors.teal;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isLow ? const Color(0xFFFDE68A) : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.medication_rounded, color: color, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        med.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
-                        ),
-                        softWrap: true,
-                      ),
-                    ),
-                    if (isLow)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFFDE68A)),
-                        ),
-                        child: const Text(
-                          'LOW STOCK',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFB45309),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                if (med.dosage != null && med.dosage!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.schedule, size: 14, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          med.dosage!,
-                          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.inventory_2_outlined, size: 14, color: AppColors.textSecondary),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Stock: ${med.currentQuantity} units (Refill at <= ${med.refillThreshold})',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isLow ? AppColors.error : AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                if (med.notes != null && med.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    med.notes!,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
-            onSelected: (val) {
-              if (val == 'edit') {
-                _showAddEditMedicineDialog(existing: med);
-              } else if (val == 'delete') {
-                _confirmDeleteMedicine(med);
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text('Edit Medicine'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                    SizedBox(width: 8),
-                    Text('Remove', style: TextStyle(color: AppColors.error)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -434,6 +329,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                                 notes: notes.isNotEmpty ? notes : null,
                               );
                         }
+                        ref.read(reminderProvider.notifier).loadTodayDoses();
                         if (dialogCtx.mounted) {
                           Navigator.pop(dialogCtx);
                         }
@@ -482,6 +378,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
               Navigator.pop(dialogCtx);
               try {
                 await ref.read(medicineProvider.notifier).deleteMedicine(med.id);
+                ref.read(reminderProvider.notifier).loadTodayDoses();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Medicine removed successfully'), backgroundColor: AppColors.success),
