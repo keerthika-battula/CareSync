@@ -3,6 +3,7 @@ import 'package:caresync/features/appointments/presentation/providers/appointmen
 import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
 import 'package:caresync/features/family/presentation/providers/family_provider.dart';
 import 'package:caresync/features/medicines/presentation/providers/medicine_provider.dart';
+import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,65 +13,79 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final authState = ref.watch(authProvider);
     final user = authState.user;
-    final medsCount = ref.watch(medicineProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '-');
-    final apptsCount = ref.watch(appointmentProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '-');
-    final famCount = ref.watch(familyProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '-');
+    final medsCount = ref.watch(medicineProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '0');
+    final apptsCount = ref.watch(appointmentProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '0');
+    final famCount = ref.watch(familyProvider).maybeWhen(data: (l) => l.length.toString(), orElse: () => '0');
 
     final displayName = user != null && user.fullName.trim().isNotEmpty
         ? user.fullName.trim()
-        : 'CareSync Member';
-    final displayEmail = user?.email ?? '';
+        : 'Keerthika Battula';
+    final displayEmail = user != null && user.email.trim().isNotEmpty
+        ? user.email.trim()
+        : 'battula.keerthika0@gmail.com';
     final role = user?.role.toUpperCase() ?? 'USER';
     final isAdmin = role == 'ADMIN';
 
     final initials = user != null && user.firstName.isNotEmpty
         ? (user.firstName[0] + (user.lastName.isNotEmpty ? user.lastName[0] : '')).toUpperCase()
-        : 'CS';
+        : 'KB';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const AppLogo(size: 28),
         elevation: 0,
         backgroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Profile Header
+            // Profile Header Card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+                  colors: [Color(0xFF1E3A8A), Color(0xFF2563EB), Color(0xFF3B82F6)],
                 ),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x202563EB),
+                    blurRadius: 14,
+                    offset: Offset(0, 6),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: 46,
-                    backgroundColor: Colors.white24,
+                    radius: 42,
+                    backgroundColor: Colors.white.withOpacity(0.2),
                     child: Text(
                       initials,
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
                     ),
                   ),
                   const SizedBox(height: 14),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        displayName,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                      Flexible(
+                        child: Text(
+                          displayName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -78,12 +93,12 @@ class ProfileScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: isAdmin ? Colors.purpleAccent.withOpacity(0.3) : Colors.white24,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: Colors.white38),
                         ),
                         child: Text(
                           role,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Colors.white),
                         ),
                       ),
                     ],
@@ -91,8 +106,10 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     displayEmail,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.85),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -104,17 +121,16 @@ class ProfileScreen extends ConsumerWidget {
                       const _VerticalDivider(),
                       _ProfileStat(label: 'Appointments', value: apptsCount),
                       const _VerticalDivider(),
-                      _ProfileStat(label: 'Family Members', value: famCount),
+                      _ProfileStat(label: 'Care Circle', value: famCount),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
 
             // Settings sections
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -139,18 +155,18 @@ class ProfileScreen extends ConsumerWidget {
                       onTap: () => context.go('/admin'),
                     ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
                   const _SectionLabel(label: 'Application'),
                   _SettingsTile(
-                    icon: Icons.notifications_none,
+                    icon: Icons.notifications_none_rounded,
                     label: 'Notifications',
-                    subtitle: 'Medication alerts, reminders',
+                    subtitle: 'Medication alerts, refill reminders',
                     onTap: () {},
                   ),
                   _SettingsTile(
-                    icon: Icons.info_outline,
+                    icon: Icons.info_outline_rounded,
                     label: 'About CareSync',
-                    subtitle: 'Version 2.0 • Healthcare PWA',
+                    subtitle: 'CareSync Healthcare PWA v2.0',
                     onTap: () {},
                   ),
                   const SizedBox(height: 24),
@@ -160,19 +176,20 @@ class ProfileScreen extends ConsumerWidget {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () => _showLogoutDialog(context, ref),
-                      icon: const Icon(Icons.logout, color: AppColors.error),
+                      icon: const Icon(Icons.logout_rounded, color: AppColors.error),
                       label: const Text(
                         'Sign Out',
                         style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.error),
+                        side: const BorderSide(color: Color(0xFFFCA5A5)),
+                        backgroundColor: const Color(0xFFFEF2F2),
                         minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 36),
                 ],
               ),
             ),
@@ -220,21 +237,21 @@ class _ProfileStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
           Text(
             value,
             style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
               color: Colors.white,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: Colors.white70),
+            style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -248,7 +265,7 @@ class _VerticalDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 36,
+      height: 32,
       width: 1,
       color: Colors.white24,
     );
@@ -269,7 +286,7 @@ class _SectionLabel extends StatelessWidget {
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
+              letterSpacing: 1.1,
             ),
       ),
     );
@@ -291,15 +308,16 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         leading: Container(
           width: 38,
           height: 38,
@@ -311,13 +329,13 @@ class _SettingsTile extends StatelessWidget {
         ),
         title: Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
         ),
         subtitle: Text(
           subtitle,
           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
-        trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textLight),
+        trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textLight),
       ),
     );
   }

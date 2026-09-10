@@ -1,7 +1,7 @@
 import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/features/appointments/data/models/appointment_models.dart';
 import 'package:caresync/features/appointments/presentation/providers/appointment_provider.dart';
-import 'package:caresync/shared/widgets/empty_state_widget.dart';
+import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -21,32 +21,42 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Appointments', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const AppLogo(size: 28),
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh appointments',
             onPressed: () => ref.read(appointmentProvider.notifier).loadAppointments(),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: appointmentsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 14),
+              Text('Loading appointments schedule...', style: TextStyle(color: AppColors.textSecondary)),
+            ],
+          ),
+        ),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text('Failed to load appointments: $err', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error)),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: () => ref.read(appointmentProvider.notifier).loadAppointments(),
-                  icon: const Icon(Icons.refresh),
+                  icon: const Icon(Icons.refresh_rounded),
                   label: const Text('Retry'),
                 ),
               ],
@@ -54,23 +64,126 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
           ),
         ),
         data: (appointments) {
-          if (appointments.isEmpty) {
-            return EmptyStateWidget(
-              icon: Icons.calendar_today_outlined,
-              title: 'No upcoming appointments',
-              subtitle: 'Keep track of doctor consultations, lab tests, and hospital visits.',
-              actionLabel: 'Book Appointment',
-              onAction: () => _showAddAppointmentDialog(),
-            );
-          }
+          return CustomScrollView(
+            slivers: [
+              // Header
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Appointments',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Manage doctor visits, diagnostic tests, and clinical checkups.',
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.calendar_month_rounded, color: Colors.indigo, size: 18),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              '${appointments.length} ${appointments.length == 1 ? "Scheduled Visit" : "Scheduled Visits"}',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: appointments.length,
-            itemBuilder: (context, index) {
-              final appt = appointments[index];
-              return _buildAppointmentCard(appt);
-            },
+              // Appointments list
+              if (appointments.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: Colors.indigo.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.calendar_today_rounded, size: 48, color: Colors.indigo),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No upcoming appointments',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Schedule routine consultations, doctor follow-ups, or lab checkups to receive automated alerts.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 18),
+                          ElevatedButton.icon(
+                            onPressed: () => _showAddAppointmentDialog(),
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: const Text('Schedule Appointment'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final appt = appointments[index];
+                        return _buildAppointmentCard(appt);
+                      },
+                      childCount: appointments.length,
+                    ),
+                  ),
+                ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 90)),
+            ],
           );
         },
       ),
@@ -78,25 +191,25 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         onPressed: () => _showAddAppointmentDialog(),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Schedule Appointment'),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Book Visit', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
 
   Widget _buildAppointmentCard(AppointmentModel appt) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Color(0x06000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -106,10 +219,10 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.12),
+              color: Colors.indigo.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.calendar_month_rounded, color: Colors.orange, size: 26),
+            child: const Icon(Icons.calendar_month_rounded, color: Colors.indigo, size: 24),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -122,21 +235,21 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                       child: Text(
                         appt.doctorName.isNotEmpty ? appt.doctorName : 'Doctor Consultation',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF0F172A),
                         ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         appt.status,
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.blue),
+                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Colors.blue),
                       ),
                     ),
                   ],
@@ -150,7 +263,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                       Expanded(
                         child: Text(
                           appt.hospitalClinic,
-                          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -164,7 +277,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                     const SizedBox(width: 4),
                     Text(
                       '${appt.appointmentDate} at ${appt.appointmentTime}',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.primary),
                     ),
                   ],
                 ),
@@ -187,7 +300,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.error),
             tooltip: 'Cancel appointment',
             onPressed: () => _confirmCancelAppointment(appt),
           ),
@@ -379,6 +492,10 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                         }
                       }
                     },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               child: isSubmitting
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Confirm Appointment'),

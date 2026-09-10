@@ -3,7 +3,7 @@ import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/core/constants/app_constants.dart';
 import 'package:caresync/features/documents/data/models/document_models.dart';
 import 'package:caresync/features/documents/presentation/providers/document_provider.dart';
-import 'package:caresync/shared/widgets/empty_state_widget.dart';
+import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,17 +16,24 @@ class DocumentsScreen extends ConsumerStatefulWidget {
 }
 
 class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
+  final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'ALL';
   String _searchQuery = '';
 
   static const _filters = [
-    ('ALL', 'All'),
-    (AppConstants.docPrescription, 'Prescription'),
-    (AppConstants.docLabReport, 'Lab Report'),
-    (AppConstants.docMedicalReport, 'Medical'),
+    ('ALL', 'All Files'),
+    (AppConstants.docPrescription, 'Prescriptions'),
+    (AppConstants.docLabReport, 'Lab Reports'),
+    (AppConstants.docMedicalReport, 'Medical Records'),
     (AppConstants.docInsurance, 'Insurance'),
     ('OTHER', 'Other'),
   ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,40 +42,114 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Health Documents', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const AppLogo(size: 28),
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh documents',
             onPressed: () => ref.read(documentProvider.notifier).loadDocuments(),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Filter chips
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Health Documents',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Store and access prescriptions, diagnostic reports, and medical files.',
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 14),
+
+                // Search Bar
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x06000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search documents by title or file name...',
+                      hintStyle: const TextStyle(fontSize: 14, color: AppColors.textLight),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 22, color: AppColors.textSecondary),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.textSecondary),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
+                    onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Filter Chips
           SizedBox(
-            height: 52,
+            height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
               children: _filters
                   .map(
                     (f) => Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(f.$2),
-                        selected: _selectedFilter == f.$1,
-                        onSelected: (_) => setState(() => _selectedFilter = f.$1),
-                        selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                        checkmarkColor: AppColors.primary,
-                        labelStyle: TextStyle(
-                          color: _selectedFilter == f.$1 ? AppColors.primary : AppColors.textPrimary,
-                          fontWeight: _selectedFilter == f.$1 ? FontWeight.w600 : FontWeight.normal,
-                          fontSize: 13,
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedFilter = f.$1),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _selectedFilter == f.$1 ? AppColors.primary : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _selectedFilter == f.$1 ? AppColors.primary : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Text(
+                            f.$2,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: _selectedFilter == f.$1 ? FontWeight.w700 : FontWeight.w500,
+                              color: _selectedFilter == f.$1 ? Colors.white : const Color(0xFF475569),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -77,31 +158,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
             ),
           ),
 
-          // Search input
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search documents by title or filename...',
-                prefixIcon: const Icon(Icons.search, size: 20),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-              ),
-              onChanged: (val) => setState(() => _searchQuery = val),
-            ),
-          ),
-
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
 
           // Document list
           Expanded(
@@ -113,13 +170,13 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('Failed to load documents: $err', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error)),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: () => ref.read(documentProvider.notifier).loadDocuments(),
-                        icon: const Icon(Icons.refresh),
+                        icon: const Icon(Icons.refresh_rounded),
                         label: const Text('Retry'),
                       ),
                     ],
@@ -138,17 +195,58 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                 }).toList();
 
                 if (filtered.isEmpty) {
-                  return EmptyStateWidget(
-                    icon: Icons.folder_open_outlined,
-                    title: documents.isEmpty ? 'No documents yet' : 'No documents match your filter',
-                    subtitle: documents.isEmpty
-                        ? 'Upload prescriptions, test reports, and insurance documents to keep them safely organized.'
-                        : 'Try changing your search term or filter category.',
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.folder_open_rounded, size: 48, color: AppColors.primary),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            documents.isEmpty ? 'No documents uploaded yet' : 'No documents match your filter',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            documents.isEmpty
+                                ? 'Upload prescriptions, diagnostic lab reports, and health cards for safe keeping.'
+                                : 'Try changing your search term or filter category.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 18),
+                          if (documents.isEmpty)
+                            ElevatedButton.icon(
+                              onPressed: _pickAndUploadDocument,
+                              icon: const Icon(Icons.upload_file_rounded, size: 18),
+                              label: const Text('Upload Document'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 90),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final doc = filtered[index];
@@ -162,8 +260,8 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _pickAndUploadDocument,
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Upload Document'),
+        icon: const Icon(Icons.upload_file_rounded),
+        label: const Text('Upload Document', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -176,13 +274,13 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Color(0x06000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -195,7 +293,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.description_outlined, color: AppColors.primary, size: 28),
+            child: const Icon(Icons.description_rounded, color: AppColors.primary, size: 26),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -215,14 +313,14 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         doc.documentType.replaceAll('_', ' '),
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
                       ),
                     ),
                   ],
@@ -237,15 +335,15 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                 Row(
                   children: [
                     if (doc.formattedFileSize.isNotEmpty) ...[
-                      const Icon(Icons.data_usage, size: 14, color: AppColors.textLight),
+                      const Icon(Icons.data_usage_rounded, size: 13, color: AppColors.textLight),
                       const SizedBox(width: 4),
-                      Text(doc.formattedFileSize, style: const TextStyle(fontSize: 12, color: AppColors.textLight)),
+                      Text(doc.formattedFileSize, style: const TextStyle(fontSize: 11.5, color: AppColors.textLight)),
                       const SizedBox(width: 12),
                     ],
                     if (doc.documentDate != null) ...[
-                      const Icon(Icons.calendar_today, size: 13, color: AppColors.textLight),
+                      const Icon(Icons.calendar_today_rounded, size: 12, color: AppColors.textLight),
                       const SizedBox(width: 4),
-                      Text(doc.documentDate!, style: const TextStyle(fontSize: 12, color: AppColors.textLight)),
+                      Text(doc.documentDate!, style: const TextStyle(fontSize: 11.5, color: AppColors.textLight)),
                     ],
                   ],
                 ),
@@ -261,7 +359,8 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
           ),
           const SizedBox(width: 8),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
+            icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textSecondary),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             onSelected: (val) {
               if (val == 'open') {
                 ref.read(documentProvider.notifier).downloadDocument(doc, openInNewTab: true);
@@ -276,9 +375,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                 value: 'open',
                 child: Row(
                   children: [
-                    Icon(Icons.open_in_new, size: 18, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text('Open in Browser'),
+                    Icon(Icons.open_in_new_rounded, size: 18, color: AppColors.primary),
+                    SizedBox(width: 10),
+                    Text('Open in Browser', style: TextStyle(fontSize: 13)),
                   ],
                 ),
               ),
@@ -286,9 +385,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                 value: 'download',
                 child: Row(
                   children: [
-                    Icon(Icons.download_outlined, size: 18, color: AppColors.primary),
-                    SizedBox(width: 8),
-                    Text('Download'),
+                    Icon(Icons.download_rounded, size: 18, color: AppColors.primary),
+                    SizedBox(width: 10),
+                    Text('Download', style: TextStyle(fontSize: 13)),
                   ],
                 ),
               ),
@@ -296,9 +395,9 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                    SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: AppColors.error)),
+                    Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                    SizedBox(width: 10),
+                    Text('Delete', style: TextStyle(fontSize: 13, color: AppColors.error)),
                   ],
                 ),
               ),
@@ -352,7 +451,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
       builder: (dialogCtx) => StatefulBuilder(
         builder: (_, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Upload Document', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text('Upload Health Document', style: TextStyle(fontWeight: FontWeight.bold)),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(
@@ -370,7 +469,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.attach_file, color: AppColors.primary, size: 20),
+                          const Icon(Icons.attach_file_rounded, color: AppColors.primary, size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(
@@ -389,8 +488,8 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       controller: titleController,
                       decoration: const InputDecoration(
                         labelText: 'Document Title *',
-                        hintText: 'e.g. Blood Test Results',
-                        prefixIcon: Icon(Icons.title),
+                        hintText: 'e.g., Blood Test Results, Prescription',
+                        prefixIcon: Icon(Icons.title_rounded),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Title is required' : null,
                     ),
@@ -399,7 +498,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       value: docType,
                       decoration: const InputDecoration(
                         labelText: 'Document Type',
-                        prefixIcon: Icon(Icons.category_outlined),
+                        prefixIcon: Icon(Icons.category_rounded),
                       ),
                       items: const [
                         DropdownMenuItem(value: 'PRESCRIPTION', child: Text('Prescription')),
@@ -418,8 +517,8 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                       maxLines: 2,
                       decoration: const InputDecoration(
                         labelText: 'Description (optional)',
-                        hintText: 'e.g., Annual checkup diagnostics',
-                        prefixIcon: Icon(Icons.notes),
+                        hintText: 'e.g., Annual cardiology diagnostics and tests',
+                        prefixIcon: Icon(Icons.notes_rounded),
                       ),
                     ),
                   ],
@@ -466,6 +565,10 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                         }
                       }
                     },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               child: isSubmitting
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Upload'),

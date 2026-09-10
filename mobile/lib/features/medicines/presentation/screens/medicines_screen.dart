@@ -4,6 +4,7 @@ import 'package:caresync/features/medicines/presentation/providers/medicine_prov
 import 'package:caresync/features/reminders/data/models/reminder_models.dart';
 import 'package:caresync/features/reminders/presentation/providers/reminder_provider.dart';
 import 'package:caresync/features/reminders/presentation/widgets/medicine_dose_card.dart';
+import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,7 +16,15 @@ class MedicinesScreen extends ConsumerStatefulWidget {
 }
 
 class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _activeFilter = 'ALL'; // ALL, TODAY, LOW_STOCK
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,50 +34,76 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('My Medicines', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const AppLogo(size: 28),
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh medicines',
             onPressed: () {
               ref.read(medicineProvider.notifier).loadMedicines();
               ref.read(reminderProvider.notifier).loadTodayDoses();
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: medicinesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 14),
+              Text('Loading medication schedule...', style: TextStyle(color: AppColors.textSecondary)),
+            ],
+          ),
+        ),
         error: (err, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const Icon(Icons.error_outline_rounded, size: 52, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text(
                   'Failed to load medicines: $err',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.error),
+                  style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed: () {
                     ref.read(medicineProvider.notifier).loadMedicines();
                     ref.read(reminderProvider.notifier).loadTodayDoses();
                   },
-                  icon: const Icon(Icons.refresh),
+                  icon: const Icon(Icons.refresh_rounded),
                   label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),
           ),
         ),
         data: (medicines) {
+          final doses = remindersAsync.valueOrNull ?? [];
+          final lowStockCount = medicines.where((m) => m.isLowStock).length;
+
+          // Apply filters
           final filtered = medicines.where((med) {
+            // Category filter
+            if (_activeFilter == 'LOW_STOCK' && !med.isLowStock) return false;
+            if (_activeFilter == 'TODAY') {
+              final hasTodayDose = doses.any((d) => d.medicineId == med.id);
+              if (!hasTodayDose) return false;
+            }
+
+            // Search filter
             if (_searchQuery.isEmpty) return true;
             final q = _searchQuery.toLowerCase();
             final name = med.name.toLowerCase();
@@ -77,32 +112,93 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
             return name.contains(q) || notes.contains(q) || dosage.contains(q);
           }).toList();
 
-          final doses = remindersAsync.valueOrNull ?? [];
-
           return CustomScrollView(
             slivers: [
-              // Search Header
+              // Header & Overview Banner
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'Search medicines by name, dosage, or notes...',
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Page title & subtitle
+                      const Text(
+                        'My Medications',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.4,
+                        ),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Track your prescriptions, daily doses, and refill inventory.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
-                    ),
-                    onChanged: (val) => setState(() => _searchQuery = val),
+                      const SizedBox(height: 16),
+
+                      // Metrics Highlights
+                      _buildSummaryRow(medicines.length, doses.length, lowStockCount),
+                      const SizedBox(height: 16),
+
+                      // Product Search Field
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x06000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search medicines by name or dosage...',
+                            hintStyle: const TextStyle(fontSize: 14, color: AppColors.textLight),
+                            prefixIcon: const Icon(Icons.search_rounded, size: 22, color: AppColors.textSecondary),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear_rounded, size: 20, color: AppColors.textSecondary),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          ),
+                          onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Filter Chips
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildFilterChip('All (${medicines.length})', 'ALL'),
+                            const SizedBox(width: 8),
+                            _buildFilterChip('Today\'s Schedule (${doses.length})', 'TODAY'),
+                            const SizedBox(width: 8),
+                            _buildFilterChip('Low Stock ($lowStockCount)', 'LOW_STOCK', isWarning: lowStockCount > 0),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -110,39 +206,76 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
               // Medicines List
               if (filtered.isEmpty)
                 SliverFillRemaining(
+                  hasScrollBody: false,
                   child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.medication_outlined, size: 64, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text(
-                          medicines.isEmpty ? 'No medicines added yet' : 'No medicines match your search',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textSecondary,
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.medication_rounded, size: 52, color: AppColors.primary),
                           ),
-                        ),
-                        if (medicines.isEmpty) ...[
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Click the button below to add your first medicine',
-                            style: TextStyle(fontSize: 13, color: AppColors.textLight),
+                          const SizedBox(height: 18),
+                          Text(
+                            medicines.isEmpty
+                                ? 'No medicines added yet'
+                                : 'No medicines match your filter',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
                           ),
+                          const SizedBox(height: 6),
+                          Text(
+                            medicines.isEmpty
+                                ? 'Add your active prescriptions to receive automated reminders and refill tracking.'
+                                : 'Try searching with a different keyword or resetting filters.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          ),
+                          const SizedBox(height: 20),
+                          if (medicines.isEmpty)
+                            ElevatedButton.icon(
+                              onPressed: () => _showAddEditMedicineDialog(),
+                              icon: const Icon(Icons.add_rounded, size: 18),
+                              label: const Text('Add Your First Medicine'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            )
+                          else
+                            OutlinedButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                  _activeFilter = 'ALL';
+                                });
+                              },
+                              child: const Text('Reset Filters'),
+                            ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final med = filtered[index];
-                        // Find today's dose for this medicine if available
                         final matchingDose = doses.cast<ReminderOccurrenceModel?>().firstWhere(
                               (d) => d?.medicineId == med.id,
                               orElse: () => null,
@@ -156,7 +289,6 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                           );
                         }
 
-                        // Fallback synthesized dose card representation
                         final fallbackDose = ReminderOccurrenceModel(
                           id: med.id,
                           medicineId: med.id,
@@ -179,17 +311,129 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                     ),
                   ),
                 ),
-              const SliverToBoxAdapter(child: SizedBox(height: 80)),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 90)),
             ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddEditMedicineDialog(),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Medicine'),
+        icon: const Icon(Icons.add_rounded, size: 20),
+        label: const Text('Add Medicine', style: TextStyle(fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
+        elevation: 4,
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(int totalMeds, int todayDoses, int lowStockCount) {
+    return Row(
+      children: [
+        _buildMetricItem(
+          label: 'Prescriptions',
+          value: '$totalMeds',
+          icon: Icons.receipt_long_rounded,
+          color: AppColors.primary,
+          bg: const Color(0xFFEFF6FF),
+        ),
+        const SizedBox(width: 10),
+        _buildMetricItem(
+          label: 'Today\'s Doses',
+          value: '$todayDoses',
+          icon: Icons.calendar_today_rounded,
+          color: Colors.indigo,
+          bg: const Color(0xFFEEF2FF),
+        ),
+        const SizedBox(width: 10),
+        _buildMetricItem(
+          label: 'Refill Alerts',
+          value: '$lowStockCount',
+          icon: Icons.inventory_rounded,
+          color: lowStockCount > 0 ? Colors.amber.shade800 : AppColors.success,
+          bg: lowStockCount > 0 ? const Color(0xFFFFFBEB) : const Color(0xFFF0FDF4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricItem({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+    required Color bg,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                  ),
+                  Text(
+                    label,
+                    style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String filterKey, {bool isWarning = false}) {
+    final isSelected = _activeFilter == filterKey;
+    return InkWell(
+      onTap: () => setState(() => _activeFilter = filterKey),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isWarning ? Colors.amber.shade800 : AppColors.primary)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? (isWarning ? Colors.amber.shade800 : AppColors.primary)
+                : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? Colors.white
+                : (isWarning ? Colors.amber.shade900 : const Color(0xFF475569)),
+          ),
+        ),
       ),
     );
   }
@@ -209,9 +453,22 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
       builder: (dialogCtx) => StatefulBuilder(
         builder: (_, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            isEditing ? 'Edit Medicine' : 'Add Medicine',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.medication_rounded, color: AppColors.primary, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                isEditing ? 'Edit Medicine' : 'Add New Medicine',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+              ),
+            ],
           ),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
@@ -227,20 +484,20 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Medicine Name *',
                         hintText: 'e.g., Paracetamol, Amoxicillin',
-                        prefixIcon: Icon(Icons.medication),
+                        prefixIcon: Icon(Icons.medication_outlined),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     TextFormField(
                       controller: dosageController,
                       decoration: const InputDecoration(
-                        labelText: 'Dosage / Schedule',
+                        labelText: 'Dosage / Frequency',
                         hintText: 'e.g., 500mg • Once daily after breakfast',
-                        prefixIcon: Icon(Icons.schedule),
+                        prefixIcon: Icon(Icons.schedule_rounded),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
@@ -265,7 +522,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                             controller: refillController,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                              labelText: 'Refill Threshold',
+                              labelText: 'Refill Alert Level',
                               hintText: 'e.g., 7',
                               prefixIcon: Icon(Icons.warning_amber_rounded),
                             ),
@@ -278,14 +535,14 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     TextFormField(
                       controller: notesController,
                       maxLines: 2,
                       decoration: const InputDecoration(
-                        labelText: 'Instructions / Notes',
-                        hintText: 'e.g., Take with plenty of water',
-                        prefixIcon: Icon(Icons.notes),
+                        labelText: 'Instructions & Notes (Optional)',
+                        hintText: 'e.g., Take with plenty of water. Do not take on empty stomach.',
+                        prefixIcon: Icon(Icons.notes_rounded),
                       ),
                     ),
                   ],
@@ -350,6 +607,10 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                         }
                       }
                     },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               child: isSubmitting
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : Text(isEditing ? 'Save Changes' : 'Add Medicine'),
@@ -366,7 +627,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Remove Medicine', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('Are you sure you want to remove "${med.name}" from your active medicines?'),
+        content: Text('Are you sure you want to remove "${med.name}" from your active medications?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),

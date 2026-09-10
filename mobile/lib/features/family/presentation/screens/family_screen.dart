@@ -2,6 +2,7 @@ import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/features/family/data/models/family_models.dart';
 import 'package:caresync/features/family/presentation/providers/family_provider.dart';
 import 'package:caresync/features/family/presentation/providers/public_user_provider.dart';
+import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -22,18 +23,19 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Family & Care Circle', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const AppLogo(size: 28),
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh',
             onPressed: () {
               ref.read(familyProvider.notifier).loadFamilyMembers();
               ref.invalidate(publicUserNamesProvider);
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
@@ -41,36 +43,48 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Section 1: Private Family Profiles
+            // Page Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'My Dependents & Family',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                    ),
-                    Text(
-                      'Manage health profiles for family members under your care.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Family & Care Circle',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Manage health profiles for dependents under your care.',
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: () => _showAddMemberDialog(),
-                  icon: const Icon(Icons.add, size: 18),
+                  icon: const Icon(Icons.add_rounded, size: 18),
                   label: const Text('Add Member'),
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
 
+            // Dependents Section
             familyAsync.when(
               loading: () => const Center(
                 child: Padding(
@@ -87,7 +101,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error),
+                    const Icon(Icons.error_outline_rounded, color: AppColors.error),
                     const SizedBox(width: 12),
                     Expanded(child: Text('Failed to load family members: $err', style: const TextStyle(color: AppColors.error))),
                     TextButton(
@@ -104,28 +118,39 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     child: Column(
                       children: [
-                        Icon(Icons.family_restroom_outlined, size: 54, color: Colors.grey.shade400),
-                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.people_alt_rounded, size: 40, color: AppColors.primary),
+                        ),
+                        const SizedBox(height: 14),
                         const Text(
                           'No family profiles added yet',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         const Text(
-                          'Add children, parents, or dependents to manage their medicines and appointments.',
+                          'Add children, parents, or dependents to manage their medicines and appointments in one place.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
                         OutlinedButton.icon(
                           onPressed: () => _showAddMemberDialog(),
-                          icon: const Icon(Icons.person_add_outlined, size: 16),
+                          icon: const Icon(Icons.person_add_rounded, size: 16),
                           label: const Text('Add Family Member'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.primary),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
                         ),
                       ],
                     ),
@@ -140,30 +165,32 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
 
             const SizedBox(height: 32),
 
-            // Section 2: Public Care Community (Names Only)
+            // CareSync Community Directory Section
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.public, color: AppColors.primary, size: 18),
+                  child: const Icon(Icons.public_rounded, color: AppColors.primary, size: 20),
                 ),
-                const SizedBox(width: 10),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CareSync Community (Names Only)',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                    ),
-                    Text(
-                      'Public directory of member display names. Private info is hidden.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CareSync Community (Names Only)',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                      ),
+                      Text(
+                        'Public directory of verified members. Private health details remain protected.',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -175,7 +202,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: const Row(
@@ -191,12 +218,12 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, color: AppColors.textSecondary, size: 20),
+                    const Icon(Icons.info_outline_rounded, color: AppColors.textSecondary, size: 20),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -213,7 +240,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     child: const Center(
@@ -225,14 +252,14 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                 return Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: publicUsers.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
                     itemBuilder: (context, index) {
                       final u = publicUsers[index];
                       return ListTile(
@@ -244,14 +271,14 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                             style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
                           ),
                         ),
-                        title: Text(u.displayName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        title: Text(u.displayName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
                         trailing: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text('Member', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          child: const Text('Member', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
                         ),
                       );
                     },
@@ -259,6 +286,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                 );
               },
             ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -274,24 +302,24 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Color(0x06000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 24,
+            radius: 22,
             backgroundColor: color.withOpacity(0.12),
             child: Text(
               member.initials,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color),
             ),
           ),
           const SizedBox(width: 14),
@@ -310,14 +338,14 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         member.relationship,
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+                        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: color),
                       ),
                     ),
                   ],
@@ -340,7 +368,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
           ),
           if (!isSelf)
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+              icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.error),
               tooltip: 'Remove family member',
               onPressed: () => _confirmDeleteMember(member),
             ),
@@ -464,6 +492,10 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                         }
                       }
                     },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
               child: isSubmitting
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Save Member'),

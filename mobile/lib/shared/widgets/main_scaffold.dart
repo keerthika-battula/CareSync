@@ -268,24 +268,82 @@ class MainScaffold extends ConsumerWidget {
     // Mobile / Tablet View
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) {
-          context.go(destinations[index].route);
-        },
-        destinations: destinations
-            .map(
-              (d) => NavigationDestination(
-                icon: Icon(d.icon),
-                selectedIcon: Icon(
-                  d.selectedIcon,
-                  color: d.route == '/admin' ? Colors.purple : AppColors.primary,
-                ),
-                label: d.label,
-              ),
-            )
-            .toList(),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x0A000000),
+              blurRadius: 12,
+              offset: Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: NavigationBarTheme(
+            data: NavigationBarThemeData(
+              height: 64,
+              elevation: 0,
+              backgroundColor: Colors.white,
+              indicatorColor: destinations[currentIndex].route == '/admin'
+                  ? Colors.purple.withOpacity(0.14)
+                  : AppColors.primary.withOpacity(0.12),
+              indicatorShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
+                    color: destinations[currentIndex].route == '/admin'
+                        ? Colors.purple
+                        : AppColors.primaryDark,
+                  );
+                }
+                return const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.1,
+                  color: Color(0xFF64748B),
+                );
+              }),
+              iconTheme: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return IconThemeData(
+                    color: destinations[currentIndex].route == '/admin'
+                        ? Colors.purple
+                        : AppColors.primary,
+                    size: 22,
+                  );
+                }
+                return const IconThemeData(
+                  color: Color(0xFF64748B),
+                  size: 22,
+                );
+              }),
+            ),
+            child: NavigationBar(
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              selectedIndex: currentIndex,
+              onDestinationSelected: (index) {
+                context.go(destinations[index].route);
+              },
+              destinations: destinations
+                  .map(
+                    (d) => NavigationDestination(
+                      icon: Icon(d.icon),
+                      selectedIcon: Icon(d.selectedIcon),
+                      label: d.label,
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ),
       ),
     );
   }
