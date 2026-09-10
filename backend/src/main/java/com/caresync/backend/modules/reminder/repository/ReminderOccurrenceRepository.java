@@ -11,4 +11,6 @@ public interface ReminderOccurrenceRepository extends JpaRepository<ReminderOccu
     List<ReminderOccurrence> findAllByUserIdAndScheduledTimeBetweenOrderByScheduledTimeAsc(UUID userId, LocalDateTime start, LocalDateTime end);
     List<ReminderOccurrence> findAllByMedicineIdOrderByScheduledTimeDesc(UUID medicineId);
     boolean existsByMedicineIdAndScheduledTime(UUID medicineId, LocalDateTime scheduledTime);
+    void deleteAllByMedicineIdAndStatus(UUID medicineId, String status);
+    void deleteAllByMedicineId(UUID medicineId);
 }

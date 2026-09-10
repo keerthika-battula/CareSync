@@ -2,6 +2,7 @@ import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/features/appointments/data/models/appointment_models.dart';
 import 'package:caresync/features/appointments/presentation/providers/appointment_provider.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
+import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -25,6 +26,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
+          const PwaInstallButton(),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh appointments',

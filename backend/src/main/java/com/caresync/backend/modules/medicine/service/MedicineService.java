@@ -12,11 +12,17 @@ import com.caresync.backend.modules.medicine.entity.Medicine;
 import com.caresync.backend.modules.medicine.entity.MedicineSchedule;
 import com.caresync.backend.modules.medicine.repository.MedicineRepository;
 import com.caresync.backend.modules.medicine.repository.MedicineScheduleRepository;
+import com.caresync.backend.modules.reminder.repository.ReminderOccurrenceRepository;
+import com.caresync.backend.modules.reminder.service.ReminderActionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -27,6 +33,8 @@ public class MedicineService {
 
     private final MedicineRepository medicineRepository;
     private final MedicineScheduleRepository scheduleRepository;
+    private final ReminderOccurrenceRepository occurrenceRepository;
+    private final ReminderActionService reminderActionService;
     private final UserRepository userRepository;
     private final FamilyMemberRepository familyMemberRepository;
 
@@ -59,6 +67,11 @@ public class MedicineService {
                 .build();
 
         Medicine savedMedicine = medicineRepository.save(medicine);
+        saveSchedules(savedMedicine, request);
+
+        // Generate today's doses for this user immediately
+        reminderActionService.generateDosesForToday(user, LocalDate.now());
+
         return mapToResponse(savedMedicine);
     }
 
@@ -104,6 +117,12 @@ public class MedicineService {
         }
 
         Medicine updated = medicineRepository.save(medicine);
+        saveSchedules(updated, request);
+
+        // Remove old pending occurrences and regenerate for today
+        occurrenceRepository.deleteAllByMedicineIdAndStatus(updated.getId(), "PENDING");
+        reminderActionService.generateDosesForToday(user, LocalDate.now());
+
         return mapToResponse(updated);
     }
 
@@ -118,6 +137,8 @@ public class MedicineService {
             throw new ForbiddenException("You are not authorized to delete this medicine");
         }
 
+        occurrenceRepository.deleteAllByMedicineId(medicineId);
+        scheduleRepository.deleteAllByMedicineId(medicineId);
         medicineRepository.delete(medicine);
     }
 
@@ -149,6 +170,76 @@ public class MedicineService {
         return medicines.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
+    private void saveSchedules(Medicine medicine, MedicineRequest request) {
+        String frequency = request.getFrequency() != null && !request.getFrequency().isBlank()
+                ? request.getFrequency().trim()
+                : "ONCE_DAILY";
+
+        List<String> allTimes = new ArrayList<>();
+
+        if (request.getSchedules() != null && !request.getSchedules().isEmpty()) {
+            for (MedicineRequest.ScheduleRequest sr : request.getSchedules()) {
+                if (sr.getScheduledTimes() != null && !sr.getScheduledTimes().isEmpty()) {
+                    for (String t : sr.getScheduledTimes()) {
+                        if (t != null && !t.isBlank()) {
+                            allTimes.add(formatTimeString(t.trim()));
+                        }
+                    }
+                } else if (sr.getScheduledTime() != null && !sr.getScheduledTime().isBlank()) {
+                    allTimes.add(formatTimeString(sr.getScheduledTime().trim()));
+                }
+            }
+        }
+
+        if (allTimes.isEmpty()) {
+            allTimes = getDefaultTimesForFrequency(frequency);
+        }
+
+        String scheduledTimesJson = "[" + allTimes.stream()
+                .map(t -> "\"" + t + "\"")
+                .collect(Collectors.joining(",")) + "]";
+
+        List<MedicineSchedule> existingSchedules = scheduleRepository.findAllByMedicineId(medicine.getId());
+        if (!existingSchedules.isEmpty()) {
+            MedicineSchedule schedule = existingSchedules.get(0);
+            schedule.setFrequency(frequency);
+            schedule.setScheduledTimes(scheduledTimesJson);
+            schedule.setDaysOfWeek("[1,2,3,4,5,6,7]");
+            schedule.setActive(true);
+            scheduleRepository.save(schedule);
+        } else {
+            MedicineSchedule schedule = MedicineSchedule.builder()
+                    .medicine(medicine)
+                    .frequency(frequency)
+                    .scheduledTimes(scheduledTimesJson)
+                    .daysOfWeek("[1,2,3,4,5,6,7]")
+                    .dosagePerIntake(BigDecimal.ONE)
+                    .isActive(true)
+                    .build();
+            scheduleRepository.save(schedule);
+        }
+    }
+
+    private String formatTimeString(String raw) {
+        if (raw == null || raw.isBlank()) return "08:00";
+        try {
+            return LocalTime.parse(raw).format(DateTimeFormatter.ofPattern("HH:mm"));
+        } catch (Exception e) {
+            return "08:00";
+        }
+    }
+
+    private List<String> getDefaultTimesForFrequency(String frequency) {
+        if (frequency == null) return List.of("08:00");
+        return switch (frequency.toUpperCase()) {
+            case "TWICE_DAILY" -> List.of("08:00", "20:00");
+            case "THREE_TIMES_DAILY" -> List.of("08:00", "14:00", "20:00");
+            case "FOUR_TIMES_DAILY" -> List.of("08:00", "12:00", "16:00", "20:00");
+            case "AS_NEEDED" -> List.of("08:00");
+            default -> List.of("08:00");
+        };
+    }
+
     private FamilyMember getOrCreateSelfFamilyMember(User user) {
         return familyMemberRepository.findByUserIdAndIsSelfTrue(user.getId())
                 .orElseGet(() -> {
@@ -169,10 +260,29 @@ public class MedicineService {
     }
 
     private MedicineResponse mapToResponse(Medicine m) {
+        List<MedicineSchedule> schedules = scheduleRepository.findAllByMedicineId(m.getId());
+        String frequency = "ONCE_DAILY";
+        List<MedicineResponse.ScheduleResponse> scheduleResponses = new ArrayList<>();
+
+        for (MedicineSchedule s : schedules) {
+            frequency = s.getFrequency();
+            List<LocalTime> times = parseScheduledTimes(s.getScheduledTimes());
+            for (LocalTime t : times) {
+                scheduleResponses.add(MedicineResponse.ScheduleResponse.builder()
+                        .id(s.getId())
+                        .frequency(s.getFrequency())
+                        .scheduledTime(t)
+                        .scheduledTimes(times)
+                        .daysOfWeek(List.of(1, 2, 3, 4, 5, 6, 7))
+                        .build());
+            }
+        }
+
         return MedicineResponse.builder()
                 .id(m.getId())
                 .name(m.getName())
                 .dosage(m.getDosage())
+                .frequency(frequency)
                 .startDate(m.getStartDate())
                 .endDate(m.getEndDate())
                 .currentQuantity(m.getCurrentStock())
@@ -180,6 +290,28 @@ public class MedicineService {
                 .notes(m.getInstructions())
                 .isActive(m.isActive())
                 .familyMemberId(m.getFamilyMember() != null ? m.getFamilyMember().getId() : null)
+                .schedules(scheduleResponses)
                 .build();
+    }
+
+    private List<LocalTime> parseScheduledTimes(String scheduledTimesJson) {
+        List<LocalTime> list = new ArrayList<>();
+        if (scheduledTimesJson == null || scheduledTimesJson.isBlank()) {
+            return list;
+        }
+
+        String cleaned = scheduledTimesJson.replace("[", "").replace("]", "").replace("\"", "").trim();
+        if (cleaned.isEmpty()) {
+            return list;
+        }
+
+        String[] parts = cleaned.split(",");
+        for (String part : parts) {
+            String timeStr = part.trim();
+            try {
+                list.add(LocalTime.parse(timeStr));
+            } catch (Exception ignored) {}
+        }
+        return list;
     }
 }

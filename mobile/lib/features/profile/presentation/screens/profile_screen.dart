@@ -4,6 +4,7 @@ import 'package:caresync/features/auth/presentation/providers/auth_provider.dart
 import 'package:caresync/features/family/presentation/providers/family_provider.dart';
 import 'package:caresync/features/medicines/presentation/providers/medicine_provider.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
+import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,6 +39,10 @@ class ProfileScreen extends ConsumerWidget {
         title: const AppLogo(size: 28),
         elevation: 0,
         backgroundColor: Colors.white,
+        actions: const [
+          PwaInstallButton(),
+          SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

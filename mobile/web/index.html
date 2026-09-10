@@ -18,19 +18,92 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="CareSync — Smart Medicine & Healthcare Reminder Platform. Your Care. In Sync. On Time.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="caresync">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CareSync">
+  <meta name="theme-color" content="#4A6CF7">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>caresync</title>
+  <title>CareSync - Healthcare Platform</title>
   <link rel="manifest" href="manifest.json">
+
+  <script>
+    // CareSync PWA Installation Bridge
+    window.caresyncPwaPrompt = null;
+    window.caresyncIsInstalled = false;
+
+    // Detect standalone mode
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+      window.caresyncIsInstalled = true;
+    }
+    if (window.navigator && window.navigator.standalone === true) {
+      window.caresyncIsInstalled = true;
+    }
+
+    // Listen for beforeinstallprompt
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.caresyncPwaPrompt = e;
+      window.dispatchEvent(new CustomEvent('caresync_pwa_installable'));
+    });
+
+    // Listen for appinstalled
+    window.addEventListener('appinstalled', function(e) {
+      window.caresyncPwaPrompt = null;
+      window.caresyncIsInstalled = true;
+      window.dispatchEvent(new CustomEvent('caresync_pwa_installed'));
+    });
+
+    // Prompt install method
+    window.caresyncPromptInstall = function() {
+      return new Promise(function(resolve) {
+        if (!window.caresyncPwaPrompt) {
+          var res = { supported: false, accepted: false };
+          window.dispatchEvent(new CustomEvent('caresync_pwa_install_response', { detail: JSON.stringify(res) }));
+          resolve(res);
+          return;
+        }
+        var promptEvent = window.caresyncPwaPrompt;
+        promptEvent.prompt();
+        promptEvent.userChoice.then(function(choiceResult) {
+          window.caresyncPwaPrompt = null;
+          var accepted = !!(choiceResult && choiceResult.outcome === 'accepted');
+          if (accepted) {
+            window.caresyncIsInstalled = true;
+          }
+          var res = { supported: true, accepted: accepted };
+          window.dispatchEvent(new CustomEvent('caresync_pwa_install_response', { detail: JSON.stringify(res) }));
+          resolve(res);
+        }).catch(function(err) {
+          var res = { supported: false, accepted: false };
+          window.dispatchEvent(new CustomEvent('caresync_pwa_install_response', { detail: JSON.stringify(res) }));
+          resolve(res);
+        });
+      });
+    };
+
+    // Listen for Dart-initiated install request
+    window.addEventListener('caresync_request_install', function() {
+      window.caresyncPromptInstall();
+    });
+
+    // Check PWA state
+    window.caresyncCheckPwaState = function() {
+      var isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                         (window.navigator && window.navigator.standalone === true);
+      return {
+        isInstalled: isStandalone || !!window.caresyncIsInstalled,
+        canInstall: !!window.caresyncPwaPrompt
+      };
+    };
+  </script>
 </head>
 <body>
   <!--

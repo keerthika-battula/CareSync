@@ -27,7 +27,9 @@ public class MedicineResponse {
     @Builder
     public static class ScheduleResponse {
         private UUID id;
+        private String frequency;
         private LocalTime scheduledTime;
+        private List<LocalTime> scheduledTimes;
         private List<Integer> daysOfWeek;
     }
 }

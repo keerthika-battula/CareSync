@@ -5,6 +5,7 @@ import 'package:caresync/features/reminders/data/models/reminder_models.dart';
 import 'package:caresync/features/reminders/presentation/providers/reminder_provider.dart';
 import 'package:caresync/features/reminders/presentation/widgets/medicine_dose_card.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
+import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,6 +39,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
+          const PwaInstallButton(),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh medicines',
@@ -284,9 +286,21 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                         if (matchingDose != null) {
                           return MedicineDoseCard(
                             dose: matchingDose,
+                            scheduleSummary: med.scheduleDisplaySummary,
+                            allScheduleTimes: med.formattedScheduleTimes,
                             onEdit: () => _showAddEditMedicineDialog(existing: med),
                             onDelete: () => _confirmDeleteMedicine(med),
                           );
+                        }
+
+                        final String fallbackTimeStr;
+                        if (med.schedules.isNotEmpty &&
+                            med.schedules.first.scheduledTimes.isNotEmpty) {
+                          final firstTime = med.schedules.first.scheduledTimes.first;
+                          final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+                          fallbackTimeStr = '${todayStr}T$firstTime:00';
+                        } else {
+                          fallbackTimeStr = DateTime.now().toIso8601String();
                         }
 
                         final fallbackDose = ReminderOccurrenceModel(
@@ -296,13 +310,15 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                           dosage: med.dosage,
                           currentStock: med.currentQuantity,
                           refillThreshold: med.refillThreshold,
-                          scheduledTime: DateTime.now().toIso8601String(),
+                          scheduledTime: fallbackTimeStr,
                           status: 'PENDING',
                           snoozeCount: 0,
                         );
 
                         return MedicineDoseCard(
                           dose: fallbackDose,
+                          scheduleSummary: med.scheduleDisplaySummary,
+                          allScheduleTimes: med.formattedScheduleTimes,
                           onEdit: () => _showAddEditMedicineDialog(existing: med),
                           onDelete: () => _confirmDeleteMedicine(med),
                         );
@@ -438,6 +454,52 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
     );
   }
 
+  TimeOfDay _parseTimeString(String s) {
+    try {
+      final parts = s.trim().split(':');
+      return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    } catch (_) {
+      return const TimeOfDay(hour: 8, minute: 0);
+    }
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final h12 = hour % 12 == 0 ? 12 : hour % 12;
+    return '$h12:$minute $period';
+  }
+
+  String _timeOfDayTo24h(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  List<TimeOfDay> _getDefaultTimesForFrequency(String freq) {
+    switch (freq) {
+      case 'ONCE_DAILY':
+        return [const TimeOfDay(hour: 8, minute: 0)];
+      case 'TWICE_DAILY':
+        return [const TimeOfDay(hour: 8, minute: 0), const TimeOfDay(hour: 20, minute: 0)];
+      case 'THREE_TIMES_DAILY':
+        return [
+          const TimeOfDay(hour: 8, minute: 0),
+          const TimeOfDay(hour: 13, minute: 0),
+          const TimeOfDay(hour: 20, minute: 0)
+        ];
+      case 'FOUR_TIMES_DAILY':
+        return [
+          const TimeOfDay(hour: 8, minute: 0),
+          const TimeOfDay(hour: 12, minute: 0),
+          const TimeOfDay(hour: 16, minute: 0),
+          const TimeOfDay(hour: 20, minute: 0)
+        ];
+      case 'AS_NEEDED':
+      default:
+        return [];
+    }
+  }
+
   void _showAddEditMedicineDialog({MedicineModel? existing}) {
     final isEditing = existing != null;
     final nameController = TextEditingController(text: existing?.name ?? '');
@@ -447,6 +509,19 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
     final notesController = TextEditingController(text: existing?.notes ?? '');
     final formKey = GlobalKey<FormState>();
     bool isSubmitting = false;
+
+    String selectedFrequency = 'ONCE_DAILY';
+    List<TimeOfDay> selectedTimes = [const TimeOfDay(hour: 8, minute: 0)];
+
+    if (existing != null && existing.schedules.isNotEmpty) {
+      final sch = existing.schedules.first;
+      selectedFrequency = sch.frequency ?? 'ONCE_DAILY';
+      if (sch.scheduledTimes.isNotEmpty) {
+        selectedTimes = sch.scheduledTimes.map(_parseTimeString).toList();
+      } else {
+        selectedTimes = _getDefaultTimesForFrequency(selectedFrequency);
+      }
+    }
 
     showDialog(
       context: context,
@@ -492,11 +567,106 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                     TextFormField(
                       controller: dosageController,
                       decoration: const InputDecoration(
-                        labelText: 'Dosage / Frequency',
-                        hintText: 'e.g., 500mg • Once daily after breakfast',
-                        prefixIcon: Icon(Icons.schedule_rounded),
+                        labelText: 'Dosage / Strength',
+                        hintText: 'e.g., 500mg, 1 tablet',
+                        prefixIcon: Icon(Icons.vaccines_outlined),
                       ),
                     ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      value: selectedFrequency,
+                      decoration: const InputDecoration(
+                        labelText: 'Frequency *',
+                        prefixIcon: Icon(Icons.repeat_rounded),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'ONCE_DAILY', child: Text('Once Daily (1 dose)')),
+                        DropdownMenuItem(value: 'TWICE_DAILY', child: Text('Twice Daily (2 doses)')),
+                        DropdownMenuItem(value: 'THREE_TIMES_DAILY', child: Text('Three Times Daily (3 doses)')),
+                        DropdownMenuItem(value: 'FOUR_TIMES_DAILY', child: Text('Four Times Daily (4 doses)')),
+                        DropdownMenuItem(value: 'AS_NEEDED', child: Text('As Needed (PRN)')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            selectedFrequency = val;
+                            selectedTimes = _getDefaultTimesForFrequency(val);
+                          });
+                        }
+                      },
+                    ),
+                    if (selectedTimes.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Reminder Schedule Times',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...List.generate(selectedTimes.length, (idx) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: InkWell(
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: selectedTimes[idx],
+                              );
+                              if (picked != null) {
+                                setDialogState(() {
+                                  selectedTimes[idx] = picked;
+                                });
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    selectedTimes.length == 1 ? 'Reminder Time' : 'Dose ${idx + 1}',
+                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF475569)),
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _formatTimeOfDay(selectedTimes[idx]),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.arrow_drop_down_rounded, size: 18, color: AppColors.primary),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
                     const SizedBox(height: 14),
                     Row(
                       children: [
@@ -567,6 +737,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                         final stock = int.tryParse(stockController.text.trim()) ?? 0;
                         final refill = int.tryParse(refillController.text.trim()) ?? 7;
                         final notes = notesController.text.trim();
+                        final times24h = selectedTimes.map(_timeOfDayTo24h).toList();
 
                         if (isEditing) {
                           await ref.read(medicineProvider.notifier).updateMedicine(
@@ -576,6 +747,8 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                                 currentQuantity: stock,
                                 refillThreshold: refill,
                                 notes: notes.isNotEmpty ? notes : null,
+                                frequency: selectedFrequency,
+                                scheduledTimes: times24h.isNotEmpty ? times24h : null,
                               );
                         } else {
                           await ref.read(medicineProvider.notifier).addMedicine(
@@ -584,6 +757,8 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                                 currentQuantity: stock,
                                 refillThreshold: refill,
                                 notes: notes.isNotEmpty ? notes : null,
+                                frequency: selectedFrequency,
+                                scheduledTimes: times24h.isNotEmpty ? times24h : null,
                               );
                         }
                         ref.read(reminderProvider.notifier).loadTodayDoses();

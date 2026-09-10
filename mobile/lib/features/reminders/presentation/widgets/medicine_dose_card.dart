@@ -10,12 +10,16 @@ class MedicineDoseCard extends ConsumerStatefulWidget {
   final ReminderOccurrenceModel dose;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final String? scheduleSummary;
+  final List<String>? allScheduleTimes;
 
   const MedicineDoseCard({
     super.key,
     required this.dose,
     this.onEdit,
     this.onDelete,
+    this.scheduleSummary,
+    this.allScheduleTimes,
   });
 
   @override
@@ -27,6 +31,17 @@ class _MedicineDoseCardState extends ConsumerState<MedicineDoseCard> {
 
   String _formatTime(String timeStr) {
     try {
+      if (timeStr.contains('T')) {
+        final dt = DateTime.parse(timeStr);
+        return DateFormat('h:mm a').format(dt);
+      }
+      final parts = timeStr.split(':');
+      if (parts.length >= 2) {
+        final hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+        final dt = DateTime(2026, 1, 1, hour, minute);
+        return DateFormat('h:mm a').format(dt);
+      }
       final dt = DateTime.parse(timeStr);
       return DateFormat('h:mm a').format(dt);
     } catch (_) {
@@ -417,6 +432,62 @@ class _MedicineDoseCardState extends ConsumerState<MedicineDoseCard> {
       );
     }
 
+    if (widget.allScheduleTimes != null && widget.allScheduleTimes!.length > 1) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(Icons.schedule_rounded, size: 16, color: AppColors.primary),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  const Text(
+                    'Scheduled: ',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
+                  ...widget.allScheduleTimes!.map(
+                    (t) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        t,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final scheduleText = (widget.scheduleSummary != null && widget.scheduleSummary!.isNotEmpty)
+        ? widget.scheduleSummary!
+        : 'Scheduled for ${_formatTime(dose.scheduledTime)}';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -428,12 +499,15 @@ class _MedicineDoseCardState extends ConsumerState<MedicineDoseCard> {
         children: [
           const Icon(Icons.schedule_rounded, size: 16, color: AppColors.primary),
           const SizedBox(width: 6),
-          Text(
-            "Scheduled for ${_formatTime(dose.scheduledTime)}",
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF334155),
+          Expanded(
+            child: Text(
+              scheduleText,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF334155),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

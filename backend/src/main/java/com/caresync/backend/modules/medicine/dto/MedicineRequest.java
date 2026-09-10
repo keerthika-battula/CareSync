@@ -24,7 +24,9 @@ public class MedicineRequest {
 
     @Data
     public static class ScheduleRequest {
-        private String scheduledTime; // HH:mm format
+        private String scheduledTime; // HH:mm format (e.g., "08:00")
+        private List<String> scheduledTimes; // ["08:00", "20:00"]
+        private String frequency;
         private List<Integer> daysOfWeek; // 1-7 (Mon-Sun)
     }
 }

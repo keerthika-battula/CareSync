@@ -4,6 +4,7 @@ import 'package:caresync/features/admin/presentation/providers/admin_provider.da
 import 'package:caresync/features/admin/presentation/widgets/admin_create_user_dialog.dart';
 import 'package:caresync/features/admin/presentation/widgets/admin_user_detail_dialog.dart';
 import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
+import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -219,6 +220,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                               ],
                             ),
                           ),
+                          const PwaInstallButton(),
+                          const SizedBox(width: 8),
                           ElevatedButton.icon(
                             onPressed: _showCreateUserDialog,
                             icon: const Icon(Icons.add, size: 18),

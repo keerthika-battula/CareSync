@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface MedicineScheduleRepository extends JpaRepository<MedicineSchedule, UUID> {
     List<MedicineSchedule> findAllByMedicineId(UUID medicineId);
+    void deleteAllByMedicineId(UUID medicineId);
 }

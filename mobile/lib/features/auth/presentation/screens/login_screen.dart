@@ -2,6 +2,7 @@ import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
 import 'package:caresync/features/auth/presentation/widgets/forgot_password_dialog.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
+import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -75,6 +76,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: const [
+          PwaInstallButton(),
+          SizedBox(width: 8),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 36.0),

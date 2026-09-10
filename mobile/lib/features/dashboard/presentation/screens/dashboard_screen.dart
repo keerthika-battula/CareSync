@@ -10,6 +10,7 @@ import 'package:caresync/features/reminders/data/models/reminder_models.dart';
 import 'package:caresync/features/reminders/presentation/providers/reminder_provider.dart';
 import 'package:caresync/features/reminders/presentation/widgets/medicine_dose_card.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
+import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -67,6 +68,7 @@ class DashboardScreen extends ConsumerWidget {
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
+          const PwaInstallButton(),
           if (authState.isAdmin)
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
@@ -283,7 +285,21 @@ class DashboardScreen extends ConsumerWidget {
                         );
 
                     if (matchingDose != null) {
-                      return MedicineDoseCard(dose: matchingDose);
+                      return MedicineDoseCard(
+                        dose: matchingDose,
+                        scheduleSummary: med.scheduleDisplaySummary,
+                        allScheduleTimes: med.formattedScheduleTimes,
+                      );
+                    }
+
+                    final String fallbackTimeStr;
+                    if (med.schedules.isNotEmpty &&
+                        med.schedules.first.scheduledTimes.isNotEmpty) {
+                      final firstTime = med.schedules.first.scheduledTimes.first;
+                      final todayStr = DateTime.now().toIso8601String().substring(0, 10);
+                      fallbackTimeStr = '${todayStr}T$firstTime:00';
+                    } else {
+                      fallbackTimeStr = DateTime.now().toIso8601String();
                     }
 
                     final fallbackDose = ReminderOccurrenceModel(
@@ -293,12 +309,16 @@ class DashboardScreen extends ConsumerWidget {
                       dosage: med.dosage,
                       currentStock: med.currentQuantity,
                       refillThreshold: med.refillThreshold,
-                      scheduledTime: DateTime.now().toIso8601String(),
+                      scheduledTime: fallbackTimeStr,
                       status: 'PENDING',
                       snoozeCount: 0,
                     );
 
-                    return MedicineDoseCard(dose: fallbackDose);
+                    return MedicineDoseCard(
+                      dose: fallbackDose,
+                      scheduleSummary: med.scheduleDisplaySummary,
+                      allScheduleTimes: med.formattedScheduleTimes,
+                    );
                   }).toList(),
                 );
               },

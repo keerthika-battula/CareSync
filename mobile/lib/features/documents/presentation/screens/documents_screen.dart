@@ -4,6 +4,7 @@ import 'package:caresync/core/constants/app_constants.dart';
 import 'package:caresync/features/documents/data/models/document_models.dart';
 import 'package:caresync/features/documents/presentation/providers/document_provider.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
+import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,6 +47,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
+          const PwaInstallButton(),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh documents',

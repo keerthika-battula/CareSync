@@ -3,6 +3,7 @@ import 'package:caresync/features/family/data/models/family_models.dart';
 import 'package:caresync/features/family/presentation/providers/family_provider.dart';
 import 'package:caresync/features/family/presentation/providers/public_user_provider.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
+import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -27,6 +28,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         actions: [
+          const PwaInstallButton(),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh',
