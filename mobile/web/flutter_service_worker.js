@@ -1,6 +1,6 @@
 'use strict';
 
-const BUILD_VERSION = '20260911_08';
+const BUILD_VERSION = '20260911_09';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -25,6 +25,7 @@ self.addEventListener('activate', (event) => {
       try {
         const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
         for (const client of clients) {
+          client.postMessage({ type: 'SW_ACTIVATED', version: BUILD_VERSION });
           if (client.url && 'navigate' in client) {
             client.navigate(client.url);
           }
@@ -34,6 +35,12 @@ self.addEventListener('activate', (event) => {
       }
     })()
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
@@ -55,4 +62,5 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => fetch(event.request))
   );
 });
+
 

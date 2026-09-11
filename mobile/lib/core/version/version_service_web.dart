@@ -36,11 +36,25 @@ class VersionServiceWeb implements VersionService {
         js.context.callMethod('caresyncHardRefresh');
         return;
       }
+    } catch (_) {}
+
+    try {
+      final caches = html.window.caches;
+      if (caches != null) {
+        caches.keys().then((keys) {
+          for (final key in keys) {
+            caches.delete(key);
+          }
+          html.window.location.reload();
+        }).catchError((_) {
+          html.window.location.reload();
+        });
+        return;
+      }
+    } catch (_) {}
+
+    try {
       html.window.location.reload();
-    } catch (_) {
-      try {
-        html.window.location.reload();
-      } catch (_) {}
-    }
+    } catch (_) {}
   }
 }

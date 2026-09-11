@@ -66,7 +66,9 @@ class VersionNotifier extends StateNotifier<VersionState> {
     try {
       final latest = await _service.fetchLatestBuildNumber();
       if (latest != null && latest.isNotEmpty && latest != AppVersionInfo.currentBuildNumber) {
-        state = state.copyWith(hasUpdate: true, latestBuild: latest);
+        debugPrint('[CareSync] Newer build detected: $latest (current: ${AppVersionInfo.currentBuildNumber}). Auto-refreshing...');
+        state = state.copyWith(hasUpdate: true, latestBuild: latest, isUpdating: true);
+        _service.hardRefresh();
       }
     } catch (_) {}
   }
