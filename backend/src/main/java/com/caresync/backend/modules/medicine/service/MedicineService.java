@@ -235,6 +235,7 @@ public class MedicineService {
             case "TWICE_DAILY" -> List.of("08:00", "20:00");
             case "THREE_TIMES_DAILY" -> List.of("08:00", "14:00", "20:00");
             case "FOUR_TIMES_DAILY" -> List.of("08:00", "12:00", "16:00", "20:00");
+            case "WEEKLY" -> List.of("09:00");
             case "AS_NEEDED" -> List.of("08:00");
             default -> List.of("08:00");
         };

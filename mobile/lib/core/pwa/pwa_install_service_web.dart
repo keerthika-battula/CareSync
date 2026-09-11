@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:html' as html;
+import 'dart:js' as js;
 import 'pwa_install_service.dart';
 
 PwaInstallService createPwaInstallService() => PwaInstallServiceWeb();
@@ -39,9 +40,12 @@ class PwaInstallServiceWeb implements PwaInstallService {
 
   void _refreshState() {
     try {
-      final isStandalone = html.window.matchMedia('(display-mode: standalone)').matches;
-      if (isStandalone) {
+      final isStandaloneDisplay = html.window.matchMedia('(display-mode: standalone)').matches;
+      final dynamic nav = js.context['navigator'];
+      final bool isIosStandalone = nav != null && nav['standalone'] == true;
+      if (isStandaloneDisplay || isIosStandalone) {
         _isInstalled = true;
+        _canInstall = false;
       }
     } catch (_) {}
     _onStateChanged?.call(_canInstall, _isInstalled);
@@ -49,6 +53,10 @@ class PwaInstallServiceWeb implements PwaInstallService {
 
   @override
   Future<({bool supported, bool accepted})> promptInstall() async {
+    if (_isInstalled) {
+      return (supported: true, accepted: true);
+    }
+
     final completer = Completer<({bool supported, bool accepted})>();
 
     late html.EventListener listener;
@@ -80,7 +88,8 @@ class PwaInstallServiceWeb implements PwaInstallService {
     html.window.addEventListener('caresync_pwa_install_response', listener);
 
     try {
-      html.window.dispatchEvent(html.CustomEvent('caresync_request_install'));
+      // Directly and synchronously trigger the install method in JS
+      js.context.callMethod('caresyncPromptInstall');
     } catch (_) {
       html.window.removeEventListener('caresync_pwa_install_response', listener);
       if (!completer.isCompleted) {
@@ -88,8 +97,7 @@ class PwaInstallServiceWeb implements PwaInstallService {
       }
     }
 
-    // Safety timeout in case no response event fires
-    Timer(const Duration(seconds: 15), () {
+    Timer(const Duration(seconds: 30), () {
       html.window.removeEventListener('caresync_pwa_install_response', listener);
       if (!completer.isCompleted) {
         completer.complete((supported: false, accepted: false));

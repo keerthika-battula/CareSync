@@ -3,6 +3,8 @@ package com.caresync.backend.modules.medicine.entity;
 import com.caresync.backend.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 
 @Entity
@@ -21,9 +23,11 @@ public class MedicineSchedule extends BaseEntity {
     @Column(nullable = false)
     private String frequency;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String daysOfWeek;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
     private String scheduledTimes;
 
