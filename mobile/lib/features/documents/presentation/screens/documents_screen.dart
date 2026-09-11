@@ -261,13 +261,15 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _pickAndUploadDocument,
-        icon: const Icon(Icons.upload_file_rounded),
-        label: const Text('Upload Document', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      floatingActionButton: (docsAsync.valueOrNull ?? []).isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _pickAndUploadDocument,
+              icon: const Icon(Icons.upload_file_rounded),
+              label: const Text('Upload Document', style: TextStyle(fontWeight: FontWeight.bold)),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
     );
   }
 

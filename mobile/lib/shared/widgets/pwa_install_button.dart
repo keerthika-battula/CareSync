@@ -27,7 +27,7 @@ class PwaInstallButton extends ConsumerWidget {
       child: Tooltip(
         message: 'Install CareSync application for fast offline & desktop access',
         child: InkWell(
-          onTap: pwaState.isPrompting ? null : () => _handleInstall(context, ref),
+          onTap: pwaState.isPrompting ? null : () => showInstallGuideOrPrompt(context, ref),
           borderRadius: BorderRadius.circular(10),
           child: Container(
             padding: EdgeInsets.symmetric(
@@ -65,7 +65,7 @@ class PwaInstallButton extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleInstall(BuildContext context, WidgetRef ref) async {
+  static Future<void> showInstallGuideOrPrompt(BuildContext context, WidgetRef ref) async {
     final result = await ref.read(pwaInstallProvider.notifier).promptInstall();
 
     if (result.supported && result.accepted) {
@@ -86,7 +86,7 @@ class PwaInstallButton extends ConsumerWidget {
     }
   }
 
-  void _showFallbackDialog(BuildContext context) {
+  static void _showFallbackDialog(BuildContext context) {
     showDialog<void>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -156,7 +156,7 @@ class PwaInstallButton extends ConsumerWidget {
     );
   }
 
-  Widget _buildInstructionStep({
+  static Widget _buildInstructionStep({
     required IconData icon,
     required String title,
     required String detail,

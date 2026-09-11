@@ -334,14 +334,16 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddEditMedicineDialog(),
-        icon: const Icon(Icons.add_rounded, size: 20),
-        label: const Text('Add Medicine', style: TextStyle(fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-      ),
+      floatingActionButton: (medicinesAsync.valueOrNull ?? []).isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => _showAddEditMedicineDialog(),
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text('Add Medicine', style: TextStyle(fontWeight: FontWeight.w700)),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 4,
+            ),
     );
   }
 

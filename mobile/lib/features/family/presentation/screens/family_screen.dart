@@ -2,7 +2,6 @@ import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/core/errors/app_error_formatter.dart';
 import 'package:caresync/features/family/data/models/family_models.dart';
 import 'package:caresync/features/family/presentation/providers/family_provider.dart';
-import 'package:caresync/features/family/presentation/providers/public_user_provider.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +19,6 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
   @override
   Widget build(BuildContext context) {
     final familyAsync = ref.watch(familyProvider);
-    final publicNamesAsync = ref.watch(publicUserNamesProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -35,7 +33,6 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
             tooltip: 'Refresh',
             onPressed: () {
               ref.read(familyProvider.notifier).loadFamilyMembers();
-              ref.invalidate(publicUserNamesProvider);
             },
           ),
           const SizedBox(width: 8),
@@ -190,129 +187,6 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
             ),
 
             const SizedBox(height: 32),
-
-            // CareSync Community Directory Section
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.public_rounded, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'CareSync Community (Names Only)',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                      ),
-                      Text(
-                        'Public directory of verified members. Private health details remain protected.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            publicNamesAsync.when(
-              loading: () => Container(
-                padding: const EdgeInsets.all(24),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                    SizedBox(width: 12),
-                    Text('Loading community directory...', style: TextStyle(color: AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-              error: (err, _) => Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline_rounded, color: AppColors.textSecondary, size: 20),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Unable to load public directory: $err',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              data: (publicUsers) {
-                if (publicUsers.isEmpty) {
-                  return Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: const Center(
-                      child: Text('No other members in community yet.', style: TextStyle(color: AppColors.textSecondary)),
-                    ),
-                  );
-                }
-
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: publicUsers.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                    itemBuilder: (context, index) {
-                      final u = publicUsers[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          radius: 18,
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                          child: Text(
-                            u.displayName.isNotEmpty ? u.displayName[0].toUpperCase() : '?',
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
-                          ),
-                        ),
-                        title: Text(u.displayName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text('Member', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 40),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:caresync/core/constants/app_colors.dart';
+import 'package:caresync/core/pwa/pwa_install_provider.dart';
 import 'package:caresync/features/appointments/presentation/providers/appointment_provider.dart';
 import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
 import 'package:caresync/features/family/presentation/providers/family_provider.dart';
@@ -144,35 +145,60 @@ class ProfileScreen extends ConsumerWidget {
                     icon: Icons.badge_outlined,
                     label: 'User ID',
                     subtitle: user?.id ?? 'Not available',
-                    onTap: () {},
+                    showChevron: false,
                   ),
                   _SettingsTile(
                     icon: Icons.shield_outlined,
                     label: 'Account Role',
                     subtitle: '$role (Access level managed by CareSync)',
-                    onTap: () {},
+                    showChevron: false,
                   ),
                   if (isAdmin)
                     _SettingsTile(
                       icon: Icons.admin_panel_settings_outlined,
                       label: 'Admin Console',
                       subtitle: 'Open administrative user management',
+                      showChevron: true,
                       onTap: () => context.go('/admin'),
                     ),
 
                   const SizedBox(height: 18),
                   const _SectionLabel(label: 'Application'),
                   _SettingsTile(
+                    icon: Icons.download_for_offline_rounded,
+                    label: 'Install CareSync App',
+                    subtitle: ref.watch(pwaInstallProvider).isInstalled
+                        ? 'CareSync is installed on this device'
+                        : 'Install PWA for fast offline access & reminders',
+                    showChevron: !ref.watch(pwaInstallProvider).isInstalled,
+                    trailing: ref.watch(pwaInstallProvider).isInstalled
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Installed',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.success),
+                            ),
+                          )
+                        : null,
+                    onTap: ref.watch(pwaInstallProvider).isInstalled
+                        ? null
+                        : () => PwaInstallButton.showInstallGuideOrPrompt(context, ref),
+                  ),
+                  const _SettingsTile(
                     icon: Icons.notifications_none_rounded,
                     label: 'Notifications',
-                    subtitle: 'Medication alerts, refill reminders',
-                    onTap: () {},
+                    subtitle: 'Medication alerts, refill reminders (In-app)',
+                    showChevron: false,
                   ),
-                  _SettingsTile(
+                  const _SettingsTile(
                     icon: Icons.info_outline_rounded,
                     label: 'About CareSync',
                     subtitle: 'CareSync Healthcare PWA v2.0',
-                    onTap: () {},
+                    showChevron: false,
                   ),
                   const SizedBox(height: 24),
 
@@ -303,13 +329,17 @@ class _SettingsTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.subtitle,
-    required this.onTap,
+    this.onTap,
+    this.showChevron = false,
+    this.trailing,
   });
 
   final IconData icon;
   final String label;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool showChevron;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -340,7 +370,9 @@ class _SettingsTile extends StatelessWidget {
           subtitle,
           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
-        trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textLight),
+        trailing: trailing ?? (showChevron && onTap != null
+            ? const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textLight)
+            : null),
       ),
     );
   }
