@@ -40,24 +40,10 @@
   <link rel="manifest" href="manifest.json">
 
   <script>
-    // Automatic version upgrade and stale cache flush
+    // Automatic version upgrade and stale CacheStorage cleanup without startup reload loop
     (function() {
-      var CURRENT_VERSION = '20260911_09';
+      var CURRENT_VERSION = '20260911_10';
       var lastVer = localStorage.getItem('caresync_app_ver');
-      
-      function flushCacheAndReload() {
-        if ('caches' in window) {
-          caches.keys().then(function(names) {
-            Promise.all(names.map(function(n) { return caches.delete(n); })).then(function() {
-              window.location.reload(true);
-            });
-          }).catch(function() {
-            window.location.reload(true);
-          });
-        } else {
-          window.location.reload(true);
-        }
-      }
 
       if (lastVer !== CURRENT_VERSION) {
         localStorage.setItem('caresync_app_ver', CURRENT_VERSION);
@@ -66,32 +52,14 @@
             names.forEach(function(name) {
               caches.delete(name);
             });
-          });
+          }).catch(function() {});
         }
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function(regs) {
             regs.forEach(function(r) { r.update(); });
-          });
+          }).catch(function() {});
         }
       }
-
-      // Check version.json dynamically on every load
-      fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-          if (data && data.buildNumber && data.buildNumber !== CURRENT_VERSION) {
-            console.log('[CareSync] New version detected:', data.buildNumber);
-            if (!sessionStorage.getItem('caresync_version_reloaded')) {
-              sessionStorage.setItem('caresync_version_reloaded', 'true');
-              flushCacheAndReload();
-            }
-          } else {
-            sessionStorage.removeItem('caresync_version_reloaded');
-          }
-        })
-        .catch(function(err) {
-          // Offline or network error; ignore
-        });
     })();
 
     // CareSync PWA Installation Bridge
@@ -162,27 +130,6 @@
         canInstall: !!window.caresyncPwaPrompt
       };
     };
-
-    // Service Worker update detection and controllerchange reload
-    if ('serviceWorker' in navigator) {
-      var isRefreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', function() {
-        console.log('[CareSync] New ServiceWorker active, reloading for clean assets...');
-        if (!isRefreshing && !sessionStorage.getItem('caresync_sw_refreshed')) {
-          isRefreshing = true;
-          sessionStorage.setItem('caresync_sw_refreshed', 'true');
-          window.location.reload(true);
-        }
-      });
-
-      // Periodically check for service worker updates
-      navigator.serviceWorker.ready.then(function(registration) {
-        registration.update();
-        setInterval(function() {
-          registration.update();
-        }, 60 * 1000);
-      });
-    }
 
     // Cache clearing hard refresh helper
     window.caresyncHardRefresh = function() {

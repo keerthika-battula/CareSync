@@ -1,6 +1,6 @@
 'use strict';
 
-const BUILD_VERSION = '20260911_09';
+const BUILD_VERSION = '20260911_10';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -26,12 +26,9 @@ self.addEventListener('activate', (event) => {
         const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
         for (const client of clients) {
           client.postMessage({ type: 'SW_ACTIVATED', version: BUILD_VERSION });
-          if (client.url && 'navigate' in client) {
-            client.navigate(client.url);
-          }
         }
       } catch (e) {
-        console.warn('[CareSync SW] Client reload error:', e);
+        console.warn('[CareSync SW] Client notification error:', e);
       }
     })()
   );
