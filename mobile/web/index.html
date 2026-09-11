@@ -42,8 +42,23 @@
   <script>
     // Automatic version upgrade and stale cache flush
     (function() {
-      var CURRENT_VERSION = '20260911_06';
+      var CURRENT_VERSION = '20260911_07';
       var lastVer = localStorage.getItem('caresync_app_ver');
+      
+      function flushCacheAndReload() {
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            Promise.all(names.map(function(n) { return caches.delete(n); })).then(function() {
+              window.location.reload(true);
+            });
+          }).catch(function() {
+            window.location.reload(true);
+          });
+        } else {
+          window.location.reload(true);
+        }
+      }
+
       if (lastVer !== CURRENT_VERSION) {
         localStorage.setItem('caresync_app_ver', CURRENT_VERSION);
         if ('caches' in window) {
@@ -55,7 +70,7 @@
         }
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function(regs) {
-            regs.forEach(function(r) { r.unregister(); });
+            regs.forEach(function(r) { r.update(); });
           });
         }
       }
@@ -68,15 +83,7 @@
             console.log('[CareSync] New version detected:', data.buildNumber);
             if (!sessionStorage.getItem('caresync_version_reloaded')) {
               sessionStorage.setItem('caresync_version_reloaded', 'true');
-              if ('caches' in window) {
-                caches.keys().then(function(names) {
-                  Promise.all(names.map(function(n) { return caches.delete(n); })).then(function() {
-                    window.location.reload(true);
-                  });
-                });
-              } else {
-                window.location.reload(true);
-              }
+              flushCacheAndReload();
             }
           } else {
             sessionStorage.removeItem('caresync_version_reloaded');
@@ -156,10 +163,16 @@
       };
     };
 
-    // Service Worker update detection and unregister helper
+    // Service Worker update detection and controllerchange reload
     if ('serviceWorker' in navigator) {
+      var isRefreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', function() {
-        console.log('[CareSync] New ServiceWorker active');
+        console.log('[CareSync] New ServiceWorker active, reloading for clean assets...');
+        if (!isRefreshing && !sessionStorage.getItem('caresync_sw_refreshed')) {
+          isRefreshing = true;
+          sessionStorage.setItem('caresync_sw_refreshed', 'true');
+          window.location.reload(true);
+        }
       });
 
       // Periodically check for service worker updates
@@ -167,7 +180,7 @@
         registration.update();
         setInterval(function() {
           registration.update();
-        }, 120 * 1000);
+        }, 60 * 1000);
       });
     }
 
