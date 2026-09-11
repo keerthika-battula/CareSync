@@ -42,7 +42,7 @@
   <script>
     // Automatic version upgrade and stale cache flush
     (function() {
-      var CURRENT_VERSION = '20260911_05';
+      var CURRENT_VERSION = '20260911_06';
       var lastVer = localStorage.getItem('caresync_app_ver');
       if (lastVer !== CURRENT_VERSION) {
         localStorage.setItem('caresync_app_ver', CURRENT_VERSION);
@@ -59,6 +59,32 @@
           });
         }
       }
+
+      // Check version.json dynamically on every load
+      fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+          if (data && data.buildNumber && data.buildNumber !== CURRENT_VERSION) {
+            console.log('[CareSync] New version detected:', data.buildNumber);
+            if (!sessionStorage.getItem('caresync_version_reloaded')) {
+              sessionStorage.setItem('caresync_version_reloaded', 'true');
+              if ('caches' in window) {
+                caches.keys().then(function(names) {
+                  Promise.all(names.map(function(n) { return caches.delete(n); })).then(function() {
+                    window.location.reload(true);
+                  });
+                });
+              } else {
+                window.location.reload(true);
+              }
+            }
+          } else {
+            sessionStorage.removeItem('caresync_version_reloaded');
+          }
+        })
+        .catch(function(err) {
+          // Offline or network error; ignore
+        });
     })();
 
     // CareSync PWA Installation Bridge

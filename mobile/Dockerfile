@@ -14,7 +14,7 @@ RUN flutter pub get
 
 # Copy source code and build for web in release mode
 COPY . .
-RUN flutter build web --release
+RUN flutter build web --release && cp web/flutter_service_worker.js build/web/flutter_service_worker.js && cp web/version.json build/web/version.json
 
 # Stage 2: Production Nginx Runtime
 FROM nginx:alpine AS runtime

@@ -1,5 +1,7 @@
 'use strict';
 
+const CACHE_NAME = 'caresync-v20260911_06';
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -16,22 +18,21 @@ self.addEventListener('activate', (event) => {
         console.warn('Failed to clear caches:', e);
       }
       try {
+        await self.clients.claim();
+      } catch (e) {
+        console.warn('Failed to claim clients:', e);
+      }
+      try {
         await self.registration.unregister();
       } catch (e) {
         console.warn('Failed to unregister service worker:', e);
       }
-      try {
-        const clients = await self.clients.matchAll({ type: 'window' });
-        clients.forEach((client) => {
-          if (client.url && 'navigate' in client) {
-            client.navigate(client.url);
-          }
-        });
-      } catch (e) {}
     })()
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    fetch(event.request, { cache: 'no-store' }).catch(() => fetch(event.request))
+  );
 });
