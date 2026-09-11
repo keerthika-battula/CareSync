@@ -40,25 +40,30 @@
   <link rel="manifest" href="manifest.json">
 
   <script>
-    // Automatic version upgrade and stale CacheStorage cleanup without startup reload loop
+    // Automatic version upgrade and single-pass Service Worker upgrade
     (function() {
-      var CURRENT_VERSION = '20260911_10';
+      var CURRENT_VERSION = '20260911_11';
       var lastVer = localStorage.getItem('caresync_app_ver');
 
       if (lastVer !== CURRENT_VERSION) {
         localStorage.setItem('caresync_app_ver', CURRENT_VERSION);
         if ('caches' in window) {
           caches.keys().then(function(names) {
-            names.forEach(function(name) {
-              caches.delete(name);
-            });
+            return Promise.all(names.map(function(name) { return caches.delete(name); }));
           }).catch(function() {});
         }
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function(regs) {
-            regs.forEach(function(r) { r.update(); });
-          }).catch(function() {});
-        }
+      }
+
+      // Upgrade listener: If the page was controlled by an OLD service worker, reload once when new SW claims client
+      if ('serviceWorker' in navigator) {
+        var hadPreviousController = !!navigator.serviceWorker.controller;
+        var hasRefreshed = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+          if (hadPreviousController && !hasRefreshed) {
+            hasRefreshed = true;
+            window.location.reload();
+          }
+        });
       }
     })();
 

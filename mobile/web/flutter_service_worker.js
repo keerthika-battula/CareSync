@@ -1,6 +1,6 @@
 'use strict';
 
-const BUILD_VERSION = '20260911_10';
+const BUILD_VERSION = '20260911_11';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
