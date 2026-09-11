@@ -82,115 +82,26 @@ class PwaInstallButton extends ConsumerWidget {
     }
 
     if (!result.supported && context.mounted) {
-      _showFallbackDialog(context);
-    }
-  }
-
-  static void _showFallbackDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.install_desktop_rounded, color: AppColors.primary, size: 24),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Install CareSync',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-              ),
-            ),
-          ],
-        ),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
             children: [
-              const Text(
-                'Install CareSync on your device for quick access, desktop launch, and enhanced speed.',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-              _buildInstructionStep(
-                icon: Icons.computer_rounded,
-                title: 'Desktop (Chrome, Edge, Brave)',
-                detail: 'Click the install icon (⊕ or ⬇) in the browser address bar, or open Menu (⋮) → "Install CareSync".',
-              ),
-              const SizedBox(height: 12),
-              _buildInstructionStep(
-                icon: Icons.phone_iphone_rounded,
-                title: 'iPhone / iPad (Safari)',
-                detail: 'Tap the Share button (⎋) at the bottom and select "Add to Home Screen".',
-              ),
-              const SizedBox(height: 12),
-              _buildInstructionStep(
-                icon: Icons.android_rounded,
-                title: 'Android (Chrome)',
-                detail: 'Tap Menu (⋮) and select "Install app" or "Add to Home screen".',
+              Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Native install prompt is not currently available in this browser session. You can install CareSync from your browser menu (⋮) or address bar.',
+                  style: TextStyle(fontSize: 13),
+                ),
               ),
             ],
           ),
+          backgroundColor: AppColors.textPrimary,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildInstructionStep({
-    required IconData icon,
-    required String title,
-    required String detail,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: AppColors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  detail,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
 }

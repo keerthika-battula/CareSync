@@ -88,8 +88,14 @@ class PwaInstallServiceWeb implements PwaInstallService {
     html.window.addEventListener('caresync_pwa_install_response', listener);
 
     try {
-      // Directly and synchronously trigger the install method in JS
-      js.context.callMethod('caresyncPromptInstall');
+      if (js.context.hasProperty('caresyncPromptInstall')) {
+        js.context.callMethod('caresyncPromptInstall');
+      } else {
+        html.window.removeEventListener('caresync_pwa_install_response', listener);
+        if (!completer.isCompleted) {
+          completer.complete((supported: false, accepted: false));
+        }
+      }
     } catch (_) {
       html.window.removeEventListener('caresync_pwa_install_response', listener);
       if (!completer.isCompleted) {
@@ -107,5 +113,7 @@ class PwaInstallServiceWeb implements PwaInstallService {
     return await completer.future;
   }
 }
+
+
 
 
