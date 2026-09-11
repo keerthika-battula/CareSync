@@ -495,6 +495,8 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
           const TimeOfDay(hour: 16, minute: 0),
           const TimeOfDay(hour: 20, minute: 0)
         ];
+      case 'WEEKLY':
+        return [const TimeOfDay(hour: 9, minute: 0)];
       case 'AS_NEEDED':
       default:
         return [];
@@ -581,11 +583,12 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                         prefixIcon: Icon(Icons.repeat_rounded),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'ONCE_DAILY', child: Text('Once Daily (1 dose)')),
-                        DropdownMenuItem(value: 'TWICE_DAILY', child: Text('Twice Daily (2 doses)')),
-                        DropdownMenuItem(value: 'THREE_TIMES_DAILY', child: Text('Three Times Daily (3 doses)')),
-                        DropdownMenuItem(value: 'FOUR_TIMES_DAILY', child: Text('Four Times Daily (4 doses)')),
-                        DropdownMenuItem(value: 'AS_NEEDED', child: Text('As Needed (PRN)')),
+                        DropdownMenuItem(value: 'ONCE_DAILY', child: Text('Once daily (1 dose)')),
+                        DropdownMenuItem(value: 'TWICE_DAILY', child: Text('Twice daily (2 doses)')),
+                        DropdownMenuItem(value: 'THREE_TIMES_DAILY', child: Text('Three times daily (3 doses)')),
+                        DropdownMenuItem(value: 'FOUR_TIMES_DAILY', child: Text('Four times daily (4 doses)')),
+                        DropdownMenuItem(value: 'WEEKLY', child: Text('Weekly')),
+                        DropdownMenuItem(value: 'AS_NEEDED', child: Text('As needed (PRN)')),
                       ],
                       onChanged: (val) {
                         if (val != null) {
@@ -596,35 +599,67 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                         }
                       },
                     ),
-                    if (selectedTimes.isNotEmpty) ...[
+                    if (selectedFrequency != 'AS_NEEDED') ...[
                       const SizedBox(height: 14),
-                      const Text(
-                        'Reminder Schedule Times',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF334155),
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Reminder Schedule Times',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF334155),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              setDialogState(() {
+                                final nextHour = selectedTimes.isEmpty
+                                    ? 8
+                                    : (selectedTimes.last.hour + 4) % 24;
+                                selectedTimes.add(TimeOfDay(hour: nextHour, minute: 0));
+                              });
+                            },
+                            icon: const Icon(Icons.add_alarm_rounded, size: 16),
+                            label: const Text('Add Time', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
-                      ...List.generate(selectedTimes.length, (idx) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: InkWell(
-                            onTap: () async {
-                              final picked = await showTimePicker(
-                                context: context,
-                                initialTime: selectedTimes[idx],
-                              );
-                              if (picked != null) {
-                                setDialogState(() {
-                                  selectedTimes[idx] = picked;
-                                });
-                              }
-                            },
+                      if (selectedTimes.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.textSecondary),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text('No reminder times configured.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                              ),
+                              TextButton(
+                                onPressed: () => setDialogState(() => selectedTimes.add(const TimeOfDay(hour: 8, minute: 0))),
+                                child: const Text('Add Default (8:00 AM)'),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ...List.generate(selectedTimes.length, (idx) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF8FAFC),
                                 borderRadius: BorderRadius.circular(10),
@@ -639,34 +674,61 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                                     style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF475569)),
                                   ),
                                   const Spacer(),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          _formatTimeOfDay(selectedTimes[idx]),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 13,
-                                            color: AppColors.primary,
+                                  InkWell(
+                                    onTap: () async {
+                                      final picked = await showTimePicker(
+                                        context: context,
+                                        initialTime: selectedTimes[idx],
+                                      );
+                                      if (picked != null) {
+                                        setDialogState(() {
+                                          selectedTimes[idx] = picked;
+                                        });
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            _formatTimeOfDay(selectedTimes[idx]),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                              color: AppColors.primary,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        const Icon(Icons.arrow_drop_down_rounded, size: 18, color: AppColors.primary),
-                                      ],
+                                          const SizedBox(width: 4),
+                                          const Icon(Icons.arrow_drop_down_rounded, size: 18, color: AppColors.primary),
+                                        ],
+                                      ),
                                     ),
                                   ),
+                                  if (selectedTimes.length > 1) ...[
+                                    const SizedBox(width: 6),
+                                    IconButton(
+                                      icon: const Icon(Icons.remove_circle_outline_rounded, size: 18, color: Color(0xFFEF4444)),
+                                      tooltip: 'Remove time',
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onPressed: () {
+                                        setDialogState(() {
+                                          selectedTimes.removeAt(idx);
+                                        });
+                                      },
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        }),
                     ],
                     const SizedBox(height: 14),
                     Row(
