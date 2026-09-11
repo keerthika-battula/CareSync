@@ -40,6 +40,27 @@
   <link rel="manifest" href="manifest.json">
 
   <script>
+    // Automatic version upgrade and stale cache flush
+    (function() {
+      var CURRENT_VERSION = '20260911_03';
+      var lastVer = localStorage.getItem('caresync_app_ver');
+      if (lastVer !== CURRENT_VERSION) {
+        localStorage.setItem('caresync_app_ver', CURRENT_VERSION);
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            names.forEach(function(name) {
+              caches.delete(name);
+            });
+          });
+        }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.unregister(); });
+          });
+        }
+      }
+    })();
+
     // CareSync PWA Installation Bridge
     window.caresyncPwaPrompt = null;
     window.caresyncIsInstalled = false;
