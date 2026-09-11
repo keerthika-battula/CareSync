@@ -1,4 +1,5 @@
 import 'package:caresync/core/constants/app_colors.dart';
+import 'package:caresync/core/errors/app_error_formatter.dart';
 import 'package:caresync/features/admin/data/models/admin_models.dart';
 import 'package:caresync/features/admin/presentation/providers/admin_provider.dart';
 import 'package:caresync/features/admin/presentation/providers/admin_user_healthcare_provider.dart';
@@ -308,7 +309,7 @@ class _AdminUserDetailDialogState extends ConsumerState<AdminUserDetailDialog>
     final medAsync = ref.watch(adminUserMedicinesProvider(userId));
     return medAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load medicines: $e', style: const TextStyle(color: AppColors.error))),
+      error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(AppErrorFormatter.format(e), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error)))),
       data: (meds) {
         if (meds.isEmpty) {
           return const Center(
@@ -365,7 +366,7 @@ class _AdminUserDetailDialogState extends ConsumerState<AdminUserDetailDialog>
     final docsAsync = ref.watch(adminUserDocumentsProvider(userId));
     return docsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load documents: $e', style: const TextStyle(color: AppColors.error))),
+      error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(AppErrorFormatter.format(e), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error)))),
       data: (docs) {
         if (docs.isEmpty) {
           return const Center(
@@ -421,7 +422,7 @@ class _AdminUserDetailDialogState extends ConsumerState<AdminUserDetailDialog>
     final famAsync = ref.watch(adminUserFamilyProvider(userId));
     return famAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load family members: $e', style: const TextStyle(color: AppColors.error))),
+      error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(AppErrorFormatter.format(e), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error)))),
       data: (members) {
         if (members.isEmpty) {
           return const Center(
@@ -466,7 +467,7 @@ class _AdminUserDetailDialogState extends ConsumerState<AdminUserDetailDialog>
     final apptAsync = ref.watch(adminUserAppointmentsProvider(userId));
     return apptAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load appointments: $e', style: const TextStyle(color: AppColors.error))),
+      error: (e, _) => Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(AppErrorFormatter.format(e), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error)))),
       data: (appts) {
         if (appts.isEmpty) {
           return const Center(

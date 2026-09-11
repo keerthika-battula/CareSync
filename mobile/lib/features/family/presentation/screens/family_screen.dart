@@ -1,4 +1,5 @@
 import 'package:caresync/core/constants/app_colors.dart';
+import 'package:caresync/core/errors/app_error_formatter.dart';
 import 'package:caresync/features/family/data/models/family_models.dart';
 import 'package:caresync/features/family/presentation/providers/family_provider.dart';
 import 'package:caresync/features/family/presentation/providers/public_user_provider.dart';
@@ -46,43 +47,66 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Page Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 540;
+
+                const titleBlock = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Family & Care Circle',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Manage health profiles for family members under your care.',
+                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                    ),
+                  ],
+                );
+
+                final addBtn = SizedBox(
+                  width: isWide ? null : double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showAddMemberDialog(),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('Add Member', style: TextStyle(fontWeight: FontWeight.w700)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                );
+
+                if (isWide) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        'Family & Care Circle',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Manage health profiles for dependents under your care.',
-                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                      ),
+                      const Expanded(child: titleBlock),
+                      const SizedBox(width: 16),
+                      addBtn,
                     ],
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddMemberDialog(),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add Member'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    titleBlock,
+                    const SizedBox(height: 14),
+                    addBtn,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 18),
 
@@ -105,7 +129,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                   children: [
                     const Icon(Icons.error_outline_rounded, color: AppColors.error),
                     const SizedBox(width: 12),
-                    Expanded(child: Text('Failed to load family members: $err', style: const TextStyle(color: AppColors.error))),
+                    Expanded(child: Text(AppErrorFormatter.format(err), style: const TextStyle(color: AppColors.error))),
                     TextButton(
                       onPressed: () => ref.read(familyProvider.notifier).loadFamilyMembers(),
                       child: const Text('Retry'),
@@ -489,7 +513,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
                         setDialogState(() => isSubmitting = false);
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
+                            SnackBar(content: Text(AppErrorFormatter.format(e)), backgroundColor: AppColors.error),
                           );
                         }
                       }
@@ -534,7 +558,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to remove: $e'), backgroundColor: AppColors.error),
+                    SnackBar(content: Text(AppErrorFormatter.format(e)), backgroundColor: AppColors.error),
                   );
                 }
               }

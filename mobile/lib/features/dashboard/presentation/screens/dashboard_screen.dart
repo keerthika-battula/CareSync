@@ -442,10 +442,10 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildQuickActions(BuildContext context) {
     final actions = [
-      (label: 'Add Medicine', icon: Icons.medication_rounded, route: '/medicines', color: AppColors.primary, bg: const Color(0xFFEFF6FF)),
-      (label: 'Upload Report', icon: Icons.upload_file_rounded, route: '/documents', color: Colors.teal, bg: const Color(0xFFF0FDFA)),
-      (label: 'Doctor Visit', icon: Icons.calendar_month_rounded, route: '/appointments', color: Colors.indigo, bg: const Color(0xFFEEF2FF)),
-      (label: 'Care Circle', icon: Icons.people_alt_rounded, route: '/family', color: Colors.purple, bg: const Color(0xFFFAF5FF)),
+      (label: 'Add Medicine', icon: Icons.add_circle_outline_rounded, route: '/medicines', color: AppColors.primary, bg: const Color(0xFFEFF6FF), border: const Color(0xFFBFDBFE)),
+      (label: 'Upload Document', icon: Icons.upload_file_rounded, route: '/documents', color: const Color(0xFF0D9488), bg: const Color(0xFFF0FDFA), border: const Color(0xFF99F6E4)),
+      (label: 'Schedule Visit', icon: Icons.calendar_month_rounded, route: '/appointments', color: const Color(0xFF4F46E5), bg: const Color(0xFFEEF2FF), border: const Color(0xFFC7D2FE)),
+      (label: 'Add Family', icon: Icons.person_add_alt_1_rounded, route: '/family', color: const Color(0xFF9333EA), bg: const Color(0xFFFAF5FF), border: const Color(0xFFE9D5FF)),
     ];
 
     return Container(
@@ -466,46 +466,68 @@ class DashboardScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Quick Access',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.2,
+            ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: actions.map((act) => Expanded(
-              child: InkWell(
-                onTap: () => context.go(act.route),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isVeryNarrow = constraints.maxWidth < 280;
+              final itemWidth = isVeryNarrow ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: actions.map((act) {
+                  return SizedBox(
+                    width: itemWidth,
+                    height: 48,
+                    child: InkWell(
+                      onTap: () => context.go(act.route),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         decoration: BoxDecoration(
                           color: act.bg,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: act.color.withOpacity(0.2)),
+                          border: Border.all(color: act.border),
                         ),
-                        child: Icon(act.icon, color: act.color, size: 22),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        act.label,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: act.color,
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(act.icon, color: act.color, size: 18),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                act.label,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: act.color,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            )).toList(),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:caresync/features/admin/presentation/providers/admin_provider.da
 import 'package:caresync/features/admin/presentation/widgets/admin_create_user_dialog.dart';
 import 'package:caresync/features/admin/presentation/widgets/admin_user_detail_dialog.dart';
 import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
+import 'package:caresync/shared/widgets/app_logo.dart';
 import 'package:caresync/shared/widgets/pwa_install_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,86 +156,132 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const AppLogo(size: 28),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        actions: [
+          const PwaInstallButton(),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh Admin Center',
+            onPressed: () => ref.read(adminProvider.notifier).fetchUsers(page: state.page),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => ref.read(adminProvider.notifier).fetchUsers(page: state.page),
           child: CustomScrollView(
             slivers: [
-              // Top App Bar / Header
+              // Top Header
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.purple.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.admin_panel_settings, color: Colors.purple, size: 28),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth >= 600;
+
+                          final titleContent = Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.admin_panel_settings, color: Colors.purple, size: 28),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      'CareSync Admin Center',
-                                      style: theme.textTheme.headlineSmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF0F172A),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.purple.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                                      ),
-                                      child: const Text(
-                                        'ADMIN ACCESS',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.purple,
+                                    Wrap(
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      children: [
+                                        Text(
+                                          'CareSync Admin Center',
+                                          style: theme.textTheme.headlineSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF0F172A),
+                                          ),
                                         ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.purple.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                                          ),
+                                          child: const Text(
+                                            'ADMIN ACCESS',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.purple,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Manage user accounts, credentials, administrative roles, and system health.',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: AppColors.textSecondary,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Manage user accounts, credentials, administrative roles, and system health.',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
+                              ),
+                            ],
+                          );
+
+                          final addUserBtn = SizedBox(
+                            width: isWide ? null : double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _showCreateUserDialog,
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add User', style: TextStyle(fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(0, 42),
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          );
+
+                          if (isWide) {
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(child: titleContent),
+                                const SizedBox(width: 16),
+                                addUserBtn,
                               ],
-                            ),
-                          ),
-                          const PwaInstallButton(),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: _showCreateUserDialog,
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Add User'),
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size(0, 42),
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          ),
-                        ],
+                            );
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              titleContent,
+                              const SizedBox(height: 14),
+                              addUserBtn,
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 24),
 
@@ -477,6 +524,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -507,47 +555,61 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   },
                 ),
               ),
-              const SizedBox(width: 12),
-              IconButton(
-                tooltip: 'Refresh list',
-                icon: const Icon(Icons.refresh),
-                onPressed: () => ref.read(adminProvider.notifier).fetchUsers(page: state.page),
+              const SizedBox(width: 10),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: IconButton(
+                  tooltip: 'Refresh list',
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(Icons.refresh_rounded, size: 20, color: Color(0xFF475569)),
+                  onPressed: () => ref.read(adminProvider.notifier).fetchUsers(page: state.page),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Text(
                 'Role:',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
               ),
-              const SizedBox(width: 8),
               _buildChoiceChip('All Roles', 'ALL', state.roleFilter, (val) {
                 ref.read(adminProvider.notifier).setRoleFilter(val);
               }),
-              const SizedBox(width: 6),
-              _buildChoiceChip('Admins Only', 'ADMIN', state.roleFilter, (val) {
+              _buildChoiceChip('Admins', 'ADMIN', state.roleFilter, (val) {
                 ref.read(adminProvider.notifier).setRoleFilter(val);
               }),
-              const SizedBox(width: 6),
-              _buildChoiceChip('Users Only', 'USER', state.roleFilter, (val) {
+              _buildChoiceChip('Users', 'USER', state.roleFilter, (val) {
                 ref.read(adminProvider.notifier).setRoleFilter(val);
               }),
-              const SizedBox(width: 16),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
               const Text(
                 'Status:',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
               ),
-              const SizedBox(width: 8),
               _buildChoiceChip('All', 'ALL', state.statusFilter, (val) {
                 ref.read(adminProvider.notifier).setStatusFilter(val);
               }),
-              const SizedBox(width: 6),
               _buildChoiceChip('Active', 'ACTIVE', state.statusFilter, (val) {
                 ref.read(adminProvider.notifier).setStatusFilter(val);
               }),
-              const SizedBox(width: 6),
               _buildChoiceChip('Deactivated', 'INACTIVE', state.statusFilter, (val) {
                 ref.read(adminProvider.notifier).setStatusFilter(val);
               }),

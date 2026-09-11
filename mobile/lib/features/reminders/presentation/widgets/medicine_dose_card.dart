@@ -484,9 +484,14 @@ class _MedicineDoseCardState extends ConsumerState<MedicineDoseCard> {
       );
     }
 
-    final scheduleText = (widget.scheduleSummary != null && widget.scheduleSummary!.isNotEmpty)
-        ? widget.scheduleSummary!
-        : 'Scheduled for ${_formatTime(dose.scheduledTime)}';
+    final String scheduleText;
+    if (widget.scheduleSummary != null && widget.scheduleSummary!.isNotEmpty) {
+      scheduleText = widget.scheduleSummary!;
+    } else if (dose.scheduledTime.isNotEmpty) {
+      scheduleText = 'Scheduled for ${_formatTime(dose.scheduledTime)}';
+    } else {
+      scheduleText = 'Time not set';
+    }
 
     return Container(
       width: double.infinity,

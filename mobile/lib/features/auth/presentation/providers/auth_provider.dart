@@ -66,26 +66,33 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await storage.saveUserEmail(user.email);
       await storage.saveUserId(user.id);
       state = state.copyWith(isInitialized: true, user: user);
-    } catch (_) {
-      final cachedRole = await storage.getUserRole();
-      final cachedEmail = await storage.getUserEmail();
-      final cachedId = await storage.getUserId();
-      final cachedName = await storage.getUserName();
-      if (cachedRole != null && cachedId != null) {
-        final names = (cachedName ?? '').split(' ');
-        state = state.copyWith(
-          isInitialized: true,
-          user: UserModel(
-            id: cachedId,
-            email: cachedEmail ?? '',
-            firstName: names.isNotEmpty ? names.first : '',
-            lastName: names.length > 1 ? names.sublist(1).join(' ') : '',
-            role: cachedRole,
-          ),
-        );
-      } else {
+    } catch (e) {
+      if (e is DioException && e.response?.statusCode == 401) {
+        // Token is genuinely invalid or expired
         await storage.clearAll();
         state = state.copyWith(isInitialized: true, user: null);
+      } else {
+        // Transient network error or backend cold starting (502/503/timeout)
+        final cachedRole = await storage.getUserRole();
+        final cachedEmail = await storage.getUserEmail();
+        final cachedId = await storage.getUserId();
+        final cachedName = await storage.getUserName();
+        if (cachedRole != null && cachedId != null) {
+          final names = (cachedName ?? '').split(' ');
+          state = state.copyWith(
+            isInitialized: true,
+            user: UserModel(
+              id: cachedId,
+              email: cachedEmail ?? '',
+              firstName: names.isNotEmpty ? names.first : '',
+              lastName: names.length > 1 ? names.sublist(1).join(' ') : '',
+              role: cachedRole,
+            ),
+          );
+        } else {
+          await storage.clearAll();
+          state = state.copyWith(isInitialized: true, user: null);
+        }
       }
     }
   }
@@ -124,10 +131,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return true;
     } catch (e) {
       String errorMessage = 'Invalid email/username or password.';
-      if (e is DioException && e.response?.data != null && e.response?.data is Map) {
-        final serverMsg = (e.response!.data as Map)['message']?.toString();
-        if (serverMsg != null && serverMsg.isNotEmpty) {
-          errorMessage = serverMsg;
+      if (e is DioException) {
+        if (e.error is String && (e.error as String).isNotEmpty) {
+          errorMessage = e.error as String;
+        } else if (e.message != null && e.message!.isNotEmpty) {
+          errorMessage = e.message!;
         }
       }
       state = state.copyWith(
@@ -160,8 +168,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (e is DioException) {
         if (e.response?.statusCode == 409) {
           errorMessage = 'An account with this email already exists. Please sign in instead.';
-        } else if (e.response?.data != null && e.response?.data is Map) {
-          errorMessage = (e.response!.data as Map)['message']?.toString() ?? errorMessage;
+        } else if (e.error is String && (e.error as String).isNotEmpty) {
+          errorMessage = e.error as String;
+        } else if (e.message != null && e.message!.isNotEmpty) {
+          errorMessage = e.message!;
         }
       }
       state = state.copyWith(
@@ -190,8 +200,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return message;
     } catch (e) {
       String errorMessage = 'Failed to send reset code. Please try again.';
-      if (e is DioException && e.response?.data != null && e.response?.data is Map) {
-        errorMessage = (e.response!.data as Map)['message']?.toString() ?? errorMessage;
+      if (e is DioException) {
+        if (e.error is String && (e.error as String).isNotEmpty) {
+          errorMessage = e.error as String;
+        } else if (e.message != null && e.message!.isNotEmpty) {
+          errorMessage = e.message!;
+        }
       }
       throw Exception(errorMessage);
     }
@@ -213,8 +227,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return message;
     } catch (e) {
       String errorMessage = 'Failed to reset password. Please check your verification code.';
-      if (e is DioException && e.response?.data != null && e.response?.data is Map) {
-        errorMessage = (e.response!.data as Map)['message']?.toString() ?? errorMessage;
+      if (e is DioException) {
+        if (e.error is String && (e.error as String).isNotEmpty) {
+          errorMessage = e.error as String;
+        } else if (e.message != null && e.message!.isNotEmpty) {
+          errorMessage = e.message!;
+        }
       }
       throw Exception(errorMessage);
     }

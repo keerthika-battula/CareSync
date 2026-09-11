@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/core/constants/app_constants.dart';
+import 'package:caresync/core/errors/app_error_formatter.dart';
 import 'package:caresync/features/documents/data/models/document_models.dart';
 import 'package:caresync/features/documents/presentation/providers/document_provider.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
@@ -174,7 +175,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                     children: [
                       const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                       const SizedBox(height: 16),
-                      Text('Failed to load documents: $err', textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error)),
+                      Text(AppErrorFormatter.format(err), textAlign: TextAlign.center, style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500)),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: () => ref.read(documentProvider.notifier).loadDocuments(),
@@ -562,7 +563,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
                         setDialogState(() => isSubmitting = false);
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppColors.error),
+                            SnackBar(content: Text(AppErrorFormatter.format(e)), backgroundColor: AppColors.error),
                           );
                         }
                       }
@@ -607,7 +608,7 @@ class _DocumentsScreenState extends ConsumerState<DocumentsScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete: $e'), backgroundColor: AppColors.error),
+                    SnackBar(content: Text(AppErrorFormatter.format(e)), backgroundColor: AppColors.error),
                   );
                 }
               }

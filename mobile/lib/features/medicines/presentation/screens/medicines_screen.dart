@@ -1,4 +1,5 @@
 import 'package:caresync/core/constants/app_colors.dart';
+import 'package:caresync/core/errors/app_error_formatter.dart';
 import 'package:caresync/features/medicines/data/models/medicine_models.dart';
 import 'package:caresync/features/medicines/presentation/providers/medicine_provider.dart';
 import 'package:caresync/features/reminders/data/models/reminder_models.dart';
@@ -71,7 +72,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                 const Icon(Icons.error_outline_rounded, size: 52, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text(
-                  'Failed to load medicines: $err',
+                  AppErrorFormatter.format(err),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500),
                 ),
@@ -730,6 +731,17 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                   ? null
                   : () async {
                       if (!formKey.currentState!.validate()) return;
+                      final times24h = selectedTimes.map(_timeOfDayTo24h).toList();
+                      if (selectedFrequency != 'AS_NEEDED' && times24h.toSet().length != times24h.length) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please select different reminder times for each dose (no duplicates).'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                        return;
+                      }
+
                       setDialogState(() => isSubmitting = true);
                       try {
                         final name = nameController.text.trim();
@@ -737,7 +749,6 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                         final stock = int.tryParse(stockController.text.trim()) ?? 0;
                         final refill = int.tryParse(refillController.text.trim()) ?? 7;
                         final notes = notesController.text.trim();
-                        final times24h = selectedTimes.map(_timeOfDayTo24h).toList();
 
                         if (isEditing) {
                           await ref.read(medicineProvider.notifier).updateMedicine(
@@ -777,7 +788,7 @@ class _MedicinesScreenState extends ConsumerState<MedicinesScreen> {
                         setDialogState(() => isSubmitting = false);
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.error),
+                            SnackBar(content: Text(AppErrorFormatter.format(e)), backgroundColor: AppColors.error),
                           );
                         }
                       }

@@ -1,6 +1,7 @@
 import 'package:caresync/core/constants/app_colors.dart';
 import 'package:caresync/features/auth/presentation/providers/auth_provider.dart';
 import 'package:caresync/shared/widgets/app_logo.dart';
+import 'package:caresync/shared/widgets/app_update_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,7 +42,7 @@ class MainScaffold extends ConsumerWidget {
       route: '/appointments',
       icon: Icons.calendar_month_outlined,
       selectedIcon: Icons.calendar_month,
-      label: 'Appointments',
+      label: 'Visits',
     ),
     _NavDestination(
       route: '/family',
@@ -259,7 +260,14 @@ class MainScaffold extends ConsumerWidget {
             ),
 
             // Main Content Area
-            Expanded(child: child),
+            Expanded(
+              child: Column(
+                children: [
+                  const AppUpdateBanner(),
+                  Expanded(child: child),
+                ],
+              ),
+            ),
           ],
         ),
       );
@@ -267,7 +275,12 @@ class MainScaffold extends ConsumerWidget {
 
     // Mobile / Tablet View
     return Scaffold(
-      body: child,
+      body: Column(
+        children: [
+          const AppUpdateBanner(),
+          Expanded(child: child),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,

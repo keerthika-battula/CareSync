@@ -20,6 +20,11 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="CareSync — Smart Medicine & Healthcare Reminder Platform. Your Care. In Sync. On Time.">
 
+  <!-- Cache-Control to prevent stale index.html in PWA / browsers -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -103,17 +108,52 @@
         canInstall: !!window.caresyncPwaPrompt
       };
     };
+
+    // Service Worker update detection and unregister helper
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        console.log('[CareSync] New ServiceWorker active');
+      });
+
+      // Periodically check for service worker updates
+      navigator.serviceWorker.ready.then(function(registration) {
+        registration.update();
+        setInterval(function() {
+          registration.update();
+        }, 120 * 1000);
+      });
+    }
+
+    // Cache clearing hard refresh helper
+    window.caresyncHardRefresh = function() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          var promises = [];
+          for (var i = 0; i < registrations.length; i++) {
+            promises.push(registrations[i].unregister());
+          }
+          if ('caches' in window) {
+            caches.keys().then(function(names) {
+              for (var j = 0; j < names.length; j++) {
+                promises.push(caches.delete(names[j]));
+              }
+              Promise.all(promises).then(function() {
+                window.location.reload(true);
+              });
+            });
+          } else {
+            Promise.all(promises).then(function() {
+              window.location.reload(true);
+            });
+          }
+        });
+      } else {
+        window.location.reload(true);
+      }
+    };
   </script>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
