@@ -8,6 +8,7 @@ import java.time.LocalDate;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, UUID> {
     List<Appointment> findAllByFamilyMemberUserId(UUID userId);
+    List<Appointment> findAllByFamilyMemberId(UUID familyMemberId);
     List<Appointment> findAllByFamilyMemberUserIdAndAppointmentDate(UUID userId, LocalDate date);
     List<Appointment> findAllByFamilyMemberUserIdAndAppointmentDateGreaterThanEqualAndStatus(UUID userId, LocalDate date, String status);
     List<Appointment> findAllByFamilyMemberUserIdAndAppointmentDateLessThanAndStatus(UUID userId, LocalDate date, String status);

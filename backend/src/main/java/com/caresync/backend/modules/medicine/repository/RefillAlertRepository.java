@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface RefillAlertRepository extends JpaRepository<RefillAlert, UUID> {
     Optional<RefillAlert> findByMedicineIdAndStatus(UUID medicineId, String status);
+    void deleteAllByMedicineId(UUID medicineId);
 }

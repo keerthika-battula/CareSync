@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldAlert, Users, UserPlus, Search, CheckCircle2, XCircle, 
   Eye, EyeOff, Lock, RefreshCw, Pill, Calendar, FileText, UserCheck, UserX, 
-  Download, ChevronLeft, ChevronRight, Shield 
+  Download, ChevronLeft, ChevronRight, Shield, Trash2, AlertCircle, UserRoundX 
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -10,10 +10,12 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { adminApi } from '@/services/api';
 
 export default function AdminPage() {
+  const { user: currentAuthUser } = useAuth();
   const { addToast } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,11 @@ export default function AdminPage() {
     role: 'USER',
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // Delete User Confirmation Modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Healthcare Overview Modal
   const [isOverviewModalOpen, setIsOverviewModalOpen] = useState(false);
@@ -121,6 +128,26 @@ export default function AdminPage() {
       fetchUsers();
     } catch (err) {
       addToast(err.message || 'Failed to update account status', 'error');
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    try {
+      setIsDeleting(true);
+      await adminApi.deleteUser(userToDelete.id);
+      addToast('User account removed successfully.', 'success');
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
+      if (users.length === 1 && page > 0) {
+        setPage((p) => p - 1);
+      } else {
+        fetchUsers();
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to remove user account', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -321,15 +348,35 @@ export default function AdminPage() {
                     </td>
 
                     <td className="px-6 py-4 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openUserOverview(u)}
-                        className="text-xs"
-                      >
-                        <Eye className="w-3.5 h-3.5 mr-1" />
-                        Healthcare Records
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openUserOverview(u)}
+                          className="text-xs"
+                          title="View healthcare records overview"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1" />
+                          Healthcare Records
+                        </Button>
+
+                        {currentAuthUser?.id !== u.id && currentAuthUser?.email !== u.email && (
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => {
+                              setUserToDelete(u);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            className="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 border border-rose-200"
+                            title="Remove user"
+                            aria-label={`Remove user ${u.fullName || u.email}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1 text-rose-600" />
+                            Remove User
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -557,6 +604,62 @@ export default function AdminPage() {
           <Button variant="outline" onClick={() => setIsOverviewModalOpen(false)}>
             Close Overview
           </Button>
+        </div>
+      </Modal>
+
+      {/* Delete User Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)}
+        title="Remove User Account?"
+        description="Please confirm user account removal"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-800 text-sm flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-rose-900 leading-relaxed">
+              This action will permanently remove the user account and its associated access. This cannot be undone.
+            </div>
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-medium">Full Name:</span>
+              <span className="font-semibold text-slate-900">{userToDelete?.fullName || 'Not provided'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-medium">Email Address:</span>
+              <span className="font-semibold text-slate-900">{userToDelete?.email}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-500 font-medium">Current Role:</span>
+              <Badge variant={userToDelete?.role === 'ADMIN' ? 'warning' : 'default'}>
+                {userToDelete?.role}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              loading={isDeleting}
+              onClick={handleDeleteUser}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              {isDeleting ? 'Removing...' : 'Remove User'}
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

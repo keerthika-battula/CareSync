@@ -118,4 +118,12 @@ public class AdminUserController {
             @PathVariable UUID userId) {
         return ResponseEntity.ok(ApiResponse.success(adminUserService.getUserAppointments(userId)));
     }
+
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<ApiResponse<Void>> deleteUser(
+            @PathVariable UUID userId,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.caresync.backend.modules.auth.entity.User currentUser) {
+        adminUserService.deleteUser(userId, currentUser);
+        return ResponseEntity.ok(ApiResponse.success("User account removed successfully", null));
+    }
 }

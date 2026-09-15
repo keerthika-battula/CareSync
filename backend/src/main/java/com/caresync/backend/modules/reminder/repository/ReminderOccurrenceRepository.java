@@ -13,4 +13,5 @@ public interface ReminderOccurrenceRepository extends JpaRepository<ReminderOccu
     boolean existsByMedicineIdAndScheduledTime(UUID medicineId, LocalDateTime scheduledTime);
     void deleteAllByMedicineIdAndStatus(UUID medicineId, String status);
     void deleteAllByMedicineId(UUID medicineId);
+    void deleteAllByUserId(UUID userId);
 }

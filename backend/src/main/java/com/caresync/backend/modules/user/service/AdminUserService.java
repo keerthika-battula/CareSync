@@ -5,19 +5,30 @@ import com.caresync.backend.common.exception.ConflictException;
 import com.caresync.backend.common.exception.ResourceNotFoundException;
 import com.caresync.backend.common.response.PageResponse;
 import com.caresync.backend.modules.appointment.dto.AppointmentResponse;
+import com.caresync.backend.modules.appointment.entity.Appointment;
 import com.caresync.backend.modules.appointment.repository.AppointmentRepository;
 import com.caresync.backend.modules.appointment.service.AppointmentService;
 import com.caresync.backend.modules.auth.entity.User;
 import com.caresync.backend.modules.auth.model.Role;
+import com.caresync.backend.modules.auth.repository.PasswordResetTokenRepository;
 import com.caresync.backend.modules.auth.repository.UserRepository;
 import com.caresync.backend.modules.document.dto.DocumentResponse;
+import com.caresync.backend.modules.document.entity.HealthcareDocument;
 import com.caresync.backend.modules.document.repository.DocumentRepository;
 import com.caresync.backend.modules.document.service.DocumentService;
+import com.caresync.backend.modules.document.service.MinioService;
 import com.caresync.backend.modules.family.dto.FamilyMemberResponse;
+import com.caresync.backend.modules.family.entity.FamilyMember;
 import com.caresync.backend.modules.family.repository.FamilyMemberRepository;
 import com.caresync.backend.modules.medicine.dto.MedicineResponse;
+import com.caresync.backend.modules.medicine.entity.Medicine;
 import com.caresync.backend.modules.medicine.repository.MedicineRepository;
+import com.caresync.backend.modules.medicine.repository.MedicineScheduleRepository;
+import com.caresync.backend.modules.medicine.repository.RefillAlertRepository;
+import com.caresync.backend.modules.medicine.repository.StockTransactionRepository;
 import com.caresync.backend.modules.medicine.service.MedicineService;
+import com.caresync.backend.modules.notification.repository.FcmTokenRepository;
+import com.caresync.backend.modules.reminder.repository.ReminderOccurrenceRepository;
 import com.caresync.backend.modules.user.dto.AdminCreateUserRequest;
 import com.caresync.backend.modules.user.dto.AdminUserHealthcareOverviewResponse;
 import com.caresync.backend.modules.user.dto.AdminUserResponse;
@@ -41,11 +52,18 @@ public class AdminUserService {
     private final PasswordEncoder passwordEncoder;
     private final FamilyMemberRepository familyMemberRepository;
     private final MedicineRepository medicineRepository;
+    private final MedicineScheduleRepository medicineScheduleRepository;
+    private final ReminderOccurrenceRepository reminderOccurrenceRepository;
+    private final RefillAlertRepository refillAlertRepository;
+    private final StockTransactionRepository stockTransactionRepository;
     private final AppointmentRepository appointmentRepository;
     private final DocumentRepository documentRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final FcmTokenRepository fcmTokenRepository;
     private final MedicineService medicineService;
     private final DocumentService documentService;
     private final AppointmentService appointmentService;
+    private final MinioService minioService;
 
     @Transactional(readOnly = true)
     public PageResponse<AdminUserResponse> getAllUsers(Pageable pageable) {
@@ -194,5 +212,63 @@ public class AdminUserService {
             throw new ResourceNotFoundException("User not found with id: " + userId);
         }
         return appointmentService.getAppointmentsForUser(userId);
+    }
+
+    @Transactional
+    public void deleteUser(UUID userId, User currentAdmin) {
+        if (currentAdmin != null && currentAdmin.getId().equals(userId)) {
+            throw new BadRequestException("Administrators cannot remove their own account.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (user.getRole() == Role.ADMIN && user.isActive()) {
+            List<User> activeAdmins = userRepository.findAllActiveAdminsForUpdate(Role.ADMIN);
+            if (activeAdmins.size() <= 1) {
+                throw new BadRequestException("The last active administrator cannot be removed.");
+            }
+        }
+
+        // 1. Clean up tokens & reminder occurrences
+        fcmTokenRepository.deleteAllByUserId(userId);
+        passwordResetTokenRepository.deleteAllByUser(user);
+        reminderOccurrenceRepository.deleteAllByUserId(userId);
+
+        // 2. Clean up family members and their healthcare records
+        List<FamilyMember> familyMembers = familyMemberRepository.findAllByUserId(userId);
+        for (FamilyMember fm : familyMembers) {
+            // Delete medicines and sub-entities
+            List<Medicine> medicines = medicineRepository.findAllByFamilyMemberId(fm.getId());
+            for (Medicine med : medicines) {
+                reminderOccurrenceRepository.deleteAllByMedicineId(med.getId());
+                medicineScheduleRepository.deleteAllByMedicineId(med.getId());
+                refillAlertRepository.deleteAllByMedicineId(med.getId());
+                stockTransactionRepository.deleteAllByMedicineId(med.getId());
+                medicineRepository.delete(med);
+            }
+
+            // Delete documents & remove MinIO storage files
+            List<HealthcareDocument> docs = documentRepository.findAllByFamilyMemberId(fm.getId());
+            for (HealthcareDocument doc : docs) {
+                try {
+                    if (doc.getFilePath() != null) {
+                        minioService.deleteFile(doc.getFilePath());
+                    }
+                } catch (Exception ignored) {
+                }
+                documentRepository.delete(doc);
+            }
+
+            // Delete appointments
+            List<Appointment> appointments = appointmentRepository.findAllByFamilyMemberId(fm.getId());
+            appointmentRepository.deleteAll(appointments);
+
+            // Delete family member
+            familyMemberRepository.delete(fm);
+        }
+
+        // 3. Delete user account
+        userRepository.delete(user);
     }
 }

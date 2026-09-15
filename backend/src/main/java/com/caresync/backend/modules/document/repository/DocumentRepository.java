@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface DocumentRepository extends JpaRepository<HealthcareDocument, UUID> {
     List<HealthcareDocument> findAllByFamilyMemberUserId(UUID userId);
+    List<HealthcareDocument> findAllByFamilyMemberId(UUID familyMemberId);
 }

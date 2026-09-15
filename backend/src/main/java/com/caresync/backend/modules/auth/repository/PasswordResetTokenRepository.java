@@ -19,4 +19,5 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     Optional<PasswordResetToken> findFirstByUserOrderByCreatedAtDesc(User user);
 
     List<PasswordResetToken> findAllByUserAndUsedAtIsNull(User user);
+    void deleteAllByUser(User user);
 }

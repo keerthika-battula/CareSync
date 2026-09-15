@@ -51,10 +51,31 @@ class AdminUserServiceTest {
     private MedicineRepository medicineRepository;
 
     @Mock
+    private com.caresync.backend.modules.medicine.repository.MedicineScheduleRepository medicineScheduleRepository;
+
+    @Mock
+    private com.caresync.backend.modules.reminder.repository.ReminderOccurrenceRepository reminderOccurrenceRepository;
+
+    @Mock
+    private com.caresync.backend.modules.medicine.repository.RefillAlertRepository refillAlertRepository;
+
+    @Mock
+    private com.caresync.backend.modules.medicine.repository.StockTransactionRepository stockTransactionRepository;
+
+    @Mock
     private AppointmentRepository appointmentRepository;
 
     @Mock
     private DocumentRepository documentRepository;
+
+    @Mock
+    private com.caresync.backend.modules.auth.repository.PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
+    private com.caresync.backend.modules.notification.repository.FcmTokenRepository fcmTokenRepository;
+
+    @Mock
+    private com.caresync.backend.modules.document.service.MinioService minioService;
 
     @InjectMocks
     private AdminUserService adminUserService;
@@ -297,5 +318,56 @@ class AdminUserServiceTest {
         assertEquals(0, overview.getActiveMedicinesCount());
         assertEquals(0, overview.getUpcomingAppointmentsCount());
         assertEquals(0, overview.getTotalDocumentsCount());
+    }
+
+    @Test
+    @DisplayName("Admin deletes a normal user account and associated records")
+    void testDeleteUser_Success() {
+        when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
+        when(familyMemberRepository.findAllByUserId(userId)).thenReturn(Collections.emptyList());
+
+        adminUserService.deleteUser(userId, sampleAdmin);
+
+        verify(fcmTokenRepository).deleteAllByUserId(userId);
+        verify(passwordResetTokenRepository).deleteAllByUser(sampleUser);
+        verify(reminderOccurrenceRepository).deleteAllByUserId(userId);
+        verify(userRepository).delete(sampleUser);
+    }
+
+    @Test
+    @DisplayName("Admin cannot delete their own account (Self-deletion protection)")
+    void testDeleteUser_SelfDeletion() {
+        BadRequestException ex = assertThrows(BadRequestException.class, () ->
+                adminUserService.deleteUser(adminId, sampleAdmin));
+
+        assertTrue(ex.getMessage().contains("Administrators cannot remove their own account"));
+        verify(userRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Admin cannot delete the ONLY active administrator (Last active admin protection)")
+    void testDeleteUser_LastActiveAdmin() {
+        when(userRepository.findById(adminId)).thenReturn(Optional.of(sampleAdmin));
+        when(userRepository.findAllActiveAdminsForUpdate(Role.ADMIN)).thenReturn(List.of(sampleAdmin));
+
+        User otherAdmin = User.builder().firstName("Other").lastName("Admin").email("other@caresync.com").role(Role.ADMIN).build();
+        otherAdmin.setId(UUID.randomUUID());
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () ->
+                adminUserService.deleteUser(adminId, otherAdmin));
+
+        assertTrue(ex.getMessage().contains("The last active administrator cannot be removed"));
+        verify(userRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("Admin deleting non-existent user throws ResourceNotFoundException")
+    void testDeleteUser_NotFound() {
+        UUID randomId = UUID.randomUUID();
+        when(userRepository.findById(randomId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () ->
+                adminUserService.deleteUser(randomId, sampleAdmin));
+        verify(userRepository, never()).delete(any());
     }
 }

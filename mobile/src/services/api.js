@@ -159,6 +159,9 @@ export const authApi = {
       phoneNumber: data.phoneNumber,
     }),
   }),
+  removeUser: (userId) => request(`/api/v1/admin/users/${userId}`, {
+    method: 'DELETE',
+  }),
   getMe: () => request('/api/v1/users/me'),
 };
 
@@ -243,6 +246,12 @@ export const adminApi = {
   updateStatus: (userId, isActive) => request(`/api/v1/admin/users/${userId}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ isActive }),
+  }),
+  deleteUser: (userId) => request(`/api/v1/admin/users/${userId}`, {
+    method: 'DELETE',
+  }),
+  removeUser: (userId) => request(`/api/v1/admin/users/${userId}`, {
+    method: 'DELETE',
   }),
   getUserHealthcareOverview: (userId) => request(`/api/v1/admin/users/${userId}/healthcare-overview`),
   getUserMedicines: (userId) => request(`/api/v1/admin/users/${userId}/medicines`),
