@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Clock,
   ArrowRight,
-  CheckCircle2,
   Lock,
   Activity,
   AlertTriangle,
@@ -92,25 +91,6 @@ export default function LandingPage() {
                     Sign In to Your Account
                   </Button>
                 </Link>
-              </div>
-
-              <div className="pt-4 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs font-semibold text-slate-500">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>100% Web-Based</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>Enterprise Spring Boot</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>Role-Based Access Control</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  <span>Zero App Store Installs</span>
-                </div>
               </div>
             </div>
 
@@ -195,22 +175,6 @@ export default function LandingPage() {
                         Confirmed
                       </span>
                     </div>
-                  </div>
-                </div>
-
-                {/* Micro Stats Bar */}
-                <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <span className="block text-sm font-extrabold text-indigo-600">96%</span>
-                    <span className="text-[10px] font-semibold text-slate-400">Adherence</span>
-                  </div>
-                  <div className="border-x border-slate-100">
-                    <span className="block text-sm font-extrabold text-slate-900">4 Active</span>
-                    <span className="text-[10px] font-semibold text-slate-400">Medicines</span>
-                  </div>
-                  <div>
-                    <span className="block text-sm font-extrabold text-teal-600">3 Members</span>
-                    <span className="text-[10px] font-semibold text-slate-400">Care Circle</span>
                   </div>
                 </div>
               </div>
