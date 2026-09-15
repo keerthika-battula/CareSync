@@ -321,10 +321,13 @@ class AdminUserServiceTest {
     }
 
     @Test
-    @DisplayName("Admin deletes a normal user account and associated records")
-    void testDeleteUser_Success() {
+    @DisplayName("Admin deletes an empty user account with no healthcare records")
+    void testDeleteUser_Success_EmptyUser() {
         when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
         when(familyMemberRepository.findAllByUserId(userId)).thenReturn(Collections.emptyList());
+        when(medicineRepository.findAllByFamilyMemberUserIdAndIsActiveTrue(userId)).thenReturn(Collections.emptyList());
+        when(documentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
+        when(appointmentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
 
         adminUserService.deleteUser(userId, sampleAdmin);
 
@@ -332,6 +335,25 @@ class AdminUserServiceTest {
         verify(passwordResetTokenRepository).deleteAllByUser(sampleUser);
         verify(reminderOccurrenceRepository).deleteAllByUserId(userId);
         verify(userRepository).delete(sampleUser);
+    }
+
+    @Test
+    @DisplayName("Admin soft-deactivates user with existing healthcare records")
+    void testDeleteUser_SoftDeactivate_WhenHealthcareRecordsExist() {
+        when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
+        when(familyMemberRepository.findAllByUserId(userId)).thenReturn(Collections.emptyList());
+        when(medicineRepository.findAllByFamilyMemberUserIdAndIsActiveTrue(userId))
+                .thenReturn(List.of(com.caresync.backend.modules.medicine.entity.Medicine.builder().build()));
+        when(documentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
+        when(appointmentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
+
+        adminUserService.deleteUser(userId, sampleAdmin);
+
+        verify(fcmTokenRepository).deleteAllByUserId(userId);
+        verify(passwordResetTokenRepository).deleteAllByUser(sampleUser);
+        assertFalse(sampleUser.isActive());
+        verify(userRepository).save(sampleUser);
+        verify(userRepository, never()).delete(sampleUser);
     }
 
     @Test

@@ -32,6 +32,7 @@ import com.caresync.backend.modules.reminder.repository.ReminderOccurrenceReposi
 import com.caresync.backend.modules.user.dto.AdminCreateUserRequest;
 import com.caresync.backend.modules.user.dto.AdminUserHealthcareOverviewResponse;
 import com.caresync.backend.modules.user.dto.AdminUserResponse;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminUserService {
@@ -230,45 +232,47 @@ public class AdminUserService {
             }
         }
 
-        // 1. Clean up tokens & reminder occurrences
-        fcmTokenRepository.deleteAllByUserId(userId);
-        passwordResetTokenRepository.deleteAllByUser(user);
-        reminderOccurrenceRepository.deleteAllByUserId(userId);
-
-        // 2. Clean up family members and their healthcare records
-        List<FamilyMember> familyMembers = familyMemberRepository.findAllByUserId(userId);
-        for (FamilyMember fm : familyMembers) {
-            // Delete medicines and sub-entities
-            List<Medicine> medicines = medicineRepository.findAllByFamilyMemberId(fm.getId());
-            for (Medicine med : medicines) {
-                reminderOccurrenceRepository.deleteAllByMedicineId(med.getId());
-                medicineScheduleRepository.deleteAllByMedicineId(med.getId());
-                refillAlertRepository.deleteAllByMedicineId(med.getId());
-                stockTransactionRepository.deleteAllByMedicineId(med.getId());
-                medicineRepository.delete(med);
-            }
-
-            // Delete documents & remove MinIO storage files
-            List<HealthcareDocument> docs = documentRepository.findAllByFamilyMemberId(fm.getId());
-            for (HealthcareDocument doc : docs) {
-                try {
-                    if (doc.getFilePath() != null) {
-                        minioService.deleteFile(doc.getFilePath());
-                    }
-                } catch (Exception ignored) {
-                }
-                documentRepository.delete(doc);
-            }
-
-            // Delete appointments
-            List<Appointment> appointments = appointmentRepository.findAllByFamilyMemberId(fm.getId());
-            appointmentRepository.deleteAll(appointments);
-
-            // Delete family member
-            familyMemberRepository.delete(fm);
+        // 1. Invalidate authentication tokens & active sessions
+        try {
+            fcmTokenRepository.deleteAllByUserId(userId);
+        } catch (Exception e) {
+            log.warn("Could not delete FCM tokens for user {}: {}", userId, e.getMessage());
+        }
+        try {
+            passwordResetTokenRepository.deleteAllByUser(user);
+        } catch (Exception e) {
+            log.warn("Could not delete password reset tokens for user {}: {}", userId, e.getMessage());
         }
 
-        // 3. Delete user account
-        userRepository.delete(user);
+        // 2. Check if user has dependent healthcare records
+        List<FamilyMember> familyMembers = familyMemberRepository.findAllByUserId(userId);
+        long activeMedicines = medicineRepository.findAllByFamilyMemberUserIdAndIsActiveTrue(userId).size();
+        long docs = documentRepository.findAllByFamilyMemberUserId(userId).size();
+        long appts = appointmentRepository.findAllByFamilyMemberUserId(userId).size();
+
+        boolean hasHealthcareData = (activeMedicines > 0 || docs > 0 || appts > 0);
+
+        if (hasHealthcareData) {
+            // Patient safety & data integrity: Soft-delete/deactivate account
+            log.info("User {} has healthcare records (medicines={}, docs={}, appts={}). Applying soft deletion/deactivation.",
+                    userId, activeMedicines, docs, appts);
+            user.setActive(false);
+            userRepository.save(user);
+        } else {
+            // Clean deletion of empty user / test account
+            try {
+                reminderOccurrenceRepository.deleteAllByUserId(userId);
+                for (FamilyMember fm : familyMembers) {
+                    familyMemberRepository.delete(fm);
+                }
+                userRepository.delete(user);
+                log.info("User {} successfully removed permanently.", userId);
+            } catch (Exception e) {
+                // Safe fallback to deactivation if any DB constraints or relations exist
+                log.warn("Permanent deletion could not complete for user {}, falling back to deactivation: {}", userId, e.getMessage());
+                user.setActive(false);
+                userRepository.save(user);
+            }
+        }
     }
 }

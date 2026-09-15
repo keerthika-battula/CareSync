@@ -182,11 +182,26 @@ export default function AdminPage() {
     }
   };
 
-  const filteredUsers = users.filter(u => {
+  const getUserDisplayName = (u) => {
+    if (!u) return 'Unnamed User';
+    return (
+      u.fullName ||
+      [u.firstName, u.lastName].filter(Boolean).join(' ') ||
+      u.username ||
+      u.email ||
+      'Unnamed User'
+    );
+  };
+
+  const filteredUsers = users.filter((u) => {
     const q = searchQuery.toLowerCase();
+    const displayName = getUserDisplayName(u).toLowerCase();
     return (
       u.email?.toLowerCase().includes(q) ||
-      u.fullName?.toLowerCase().includes(q) ||
+      u.firstName?.toLowerCase().includes(q) ||
+      u.lastName?.toLowerCase().includes(q) ||
+      u.username?.toLowerCase().includes(q) ||
+      displayName.includes(q) ||
       u.role?.toLowerCase().includes(q)
     );
   });
@@ -308,10 +323,10 @@ export default function AdminPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-sm">
-                          {u.fullName?.charAt(0) || u.email?.charAt(0) || 'U'}
+                          {getUserDisplayName(u).charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div>
-                          <div className="font-semibold text-slate-900">{u.fullName || 'Unnamed User'}</div>
+                          <div className="font-semibold text-slate-900">{getUserDisplayName(u)}</div>
                           <div className="text-xs text-slate-500">{u.email}</div>
                         </div>
                       </div>
@@ -626,7 +641,7 @@ export default function AdminPage() {
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
             <div className="flex justify-between">
               <span className="text-slate-500 font-medium">Full Name:</span>
-              <span className="font-semibold text-slate-900">{userToDelete?.fullName || 'Not provided'}</span>
+              <span className="font-semibold text-slate-900">{getUserDisplayName(userToDelete)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500 font-medium">Email Address:</span>

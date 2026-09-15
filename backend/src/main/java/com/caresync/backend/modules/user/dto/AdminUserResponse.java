@@ -20,6 +20,7 @@ public class AdminUserResponse {
     private String username;
     private String firstName;
     private String lastName;
+    private String fullName;
     private String phoneNumber;
     private Role role;
     private boolean isActive;
@@ -28,12 +29,21 @@ public class AdminUserResponse {
     private LocalDateTime updatedAt;
 
     public static AdminUserResponse fromEntity(User user) {
+        String fullName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                (user.getLastName() != null ? user.getLastName() : "")).trim();
+        if (fullName.isEmpty()) {
+            fullName = user.getUsername() != null && !user.getUsername().isBlank()
+                    ? user.getUsername()
+                    : user.getEmail();
+        }
+
         return AdminUserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .username(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
+                .fullName(fullName)
                 .phoneNumber(user.getPhoneNumber())
                 .role(user.getRole())
                 .isActive(user.isActive())
