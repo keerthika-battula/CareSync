@@ -47,9 +47,8 @@ export default function LoginPage() {
       navigate(from, { replace: true });
     } catch (err) {
       clearTimeout(timer);
-      const msg = err.message || 'Invalid credentials. Please verify your email and password.';
+      const msg = err.message || 'Invalid email/username or password.';
       setError(msg);
-      showToast(msg, 'error');
     } finally {
       clearTimeout(timer);
       setIsLoading(false);
