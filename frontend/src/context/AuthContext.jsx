@@ -37,27 +37,45 @@ export function AuthProvider({ children }) {
     initAuth();
   }, []);
 
+  const formatUser = (u) => {
+    if (!u) return null;
+    const name = u.fullName || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || u.email || 'CareSync User';
+    return {
+      ...u,
+      fullName: name,
+      displayName: name,
+    };
+  };
+
   const login = async (email, password, remember = true) => {
     const response = await authApi.login({ email, password });
-    const authData = response.data;
-    if (authData?.accessToken) {
-      setAuthToken(authData.accessToken, remember);
-      setStoredUser(authData.user, remember);
-      setToken(authData.accessToken);
-      setUser(authData.user);
+    const authData = response.data || response;
+    const tokenStr = authData?.accessToken || authData?.token;
+    const rawUser = authData?.user || authData;
+
+    if (tokenStr) {
+      const userObj = formatUser(rawUser);
+      setAuthToken(tokenStr, remember);
+      setStoredUser(userObj, remember);
+      setToken(tokenStr);
+      setUser(userObj);
       return authData;
     }
-    throw new Error('Authentication failed: Missing access token');
+    throw new Error('Authentication failed: Missing access token in server response');
   };
 
   const register = async (userData) => {
     const response = await authApi.register(userData);
-    const authData = response.data;
-    if (authData?.accessToken) {
-      setAuthToken(authData.accessToken, true);
-      setStoredUser(authData.user, true);
-      setToken(authData.accessToken);
-      setUser(authData.user);
+    const authData = response.data || response;
+    const tokenStr = authData?.accessToken || authData?.token;
+    const rawUser = authData?.user || authData;
+
+    if (tokenStr) {
+      const userObj = formatUser(rawUser);
+      setAuthToken(tokenStr, true);
+      setStoredUser(userObj, true);
+      setToken(tokenStr);
+      setUser(userObj);
       return authData;
     }
     return response;

@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusNote, setStatusNote] = useState('');
   const [error, setError] = useState('');
 
   const { login } = useAuth();
@@ -24,32 +25,47 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setStatusNote('');
 
     if (!email.trim() || !password) {
-      setError('Please enter both email and password');
+      setError('Please enter both your email address and password');
       return;
     }
 
     setIsLoading(true);
+
+    // If backend takes more than 2.5s (e.g. Render cold start), display friendly note
+    const timer = setTimeout(() => {
+      setStatusNote('Connecting to secure CareSync servers... (Free-tier instances may take a few seconds on initial wake-up)');
+    }, 2500);
+
     try {
       await login(email.trim(), password, remember);
+      clearTimeout(timer);
       showToast('Welcome back to CareSync!', 'success');
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || 'Invalid credentials. Please verify your email and password.');
+      clearTimeout(timer);
+      const msg = err.message || 'Invalid credentials. Please verify your email and password.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
+      clearTimeout(timer);
       setIsLoading(false);
+      setStatusNote('');
     }
   };
 
   const fillDemoPatient = () => {
     setEmail('testpatient2026@caresync.com');
     setPassword('Password123!');
+    setError('');
   };
 
   const fillDemoAdmin = () => {
     setEmail('battula.keerthika0@gmail.com');
     setPassword('Password123!');
+    setError('');
   };
 
   return (
@@ -123,6 +139,13 @@ export default function LoginPage() {
                 Remember this device
               </label>
             </div>
+
+            {statusNote && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs animate-pulse">
+                <Sparkles className="h-4 w-4 flex-shrink-0 text-indigo-500" />
+                <span>{statusNote}</span>
+              </div>
+            )}
 
             <Button
               type="submit"

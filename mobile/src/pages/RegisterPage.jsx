@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Lock, Mail, User, ArrowRight, AlertCircle, Shield } from 'lucide-react';
+import { Heart, Lock, Mail, User, ArrowRight, AlertCircle, Shield, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Button } from '../components/ui/Button';
@@ -18,6 +18,7 @@ export default function RegisterPage() {
     role: 'USER',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [statusNote, setStatusNote] = useState('');
   const [error, setError] = useState('');
 
   const { register } = useAuth();
@@ -31,18 +32,24 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setStatusNote('');
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
       return;
     }
 
     setIsLoading(true);
+
+    const timer = setTimeout(() => {
+      setStatusNote('Creating your account on CareSync servers... (Free-tier instances may take a few seconds on initial wake-up)');
+    }, 2500);
+
     try {
       await register({
         firstName: formData.firstName.trim(),
@@ -51,12 +58,18 @@ export default function RegisterPage() {
         password: formData.password,
         role: formData.role,
       });
+      clearTimeout(timer);
       showToast('Account created successfully! Welcome to CareSync.', 'success');
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.message || 'Failed to create account. Please try again.');
+      clearTimeout(timer);
+      const msg = err.message || 'Failed to create account. Please try again.';
+      setError(msg);
+      showToast(msg, 'error');
     } finally {
+      clearTimeout(timer);
       setIsLoading(false);
+      setStatusNote('');
     }
   };
 
@@ -121,7 +134,7 @@ export default function RegisterPage() {
               label="Password"
               type="password"
               name="password"
-              placeholder="Min 8 characters"
+              placeholder="Min 6 characters"
               icon={Lock}
               value={formData.password}
               onChange={handleChange}
@@ -149,6 +162,13 @@ export default function RegisterPage() {
                 { value: 'ADMIN', label: 'Healthcare Administrator' },
               ]}
             />
+
+            {statusNote && (
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs animate-pulse">
+                <Sparkles className="h-4 w-4 flex-shrink-0 text-indigo-500" />
+                <span>{statusNote}</span>
+              </div>
+            )}
 
             <Button
               type="submit"

@@ -51,6 +51,7 @@ async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const headers = {
+    'Accept': 'application/json, text/plain, */*',
     ...(options.headers || {}),
   };
 
@@ -62,13 +63,20 @@ async function request(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  // AbortController with 40-second timeout for server cold-starts
+  const controller = new AbortController();
+  const timeoutMs = options.timeout || 40000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   const config = {
     ...options,
     headers,
+    signal: controller.signal,
   };
 
   try {
     const response = await fetch(url, config);
+    clearTimeout(timeoutId);
 
     // Handle file blob downloads
     if (options.responseType === 'blob') {
@@ -90,9 +98,23 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError') {
+      const timeoutErr = new Error('Server took too long to respond. The backend may be starting up—please try again.');
+      timeoutErr.status = 504;
+      throw timeoutErr;
+    }
+
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      const netErr = new Error('Unable to connect to CareSync server. Please check your network or try again in a moment.');
+      netErr.status = 0;
+      throw netErr;
+    }
+
     if (error.status === 401 && !endpoint.includes('/api/auth/')) {
       clearAuthToken();
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/') {
         window.location.href = '/login';
       }
     }
