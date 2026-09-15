@@ -15,15 +15,27 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(getAuthToken());
   const [isLoading, setIsLoading] = useState(true);
 
+  const formatUser = (u) => {
+    if (!u) return null;
+    const computedName = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.fullName || u.username || u.email || 'CareSync User';
+    return {
+      ...u,
+      fullName: computedName,
+      displayName: computedName,
+    };
+  };
+
   useEffect(() => {
     async function initAuth() {
       const storedToken = getAuthToken();
       if (storedToken) {
         try {
           const res = await authApi.getMe();
-          if (res?.data) {
-            setUser(res.data);
-            setStoredUser(res.data);
+          const raw = res?.data || res;
+          if (raw) {
+            const formatted = formatUser(raw);
+            setUser(formatted);
+            setStoredUser(formatted);
           }
         } catch (err) {
           console.warn('Session verification failed:', err);
@@ -36,16 +48,6 @@ export function AuthProvider({ children }) {
     }
     initAuth();
   }, []);
-
-  const formatUser = (u) => {
-    if (!u) return null;
-    const name = u.fullName || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || u.email || 'CareSync User';
-    return {
-      ...u,
-      fullName: name,
-      displayName: name,
-    };
-  };
 
   const login = async (email, password, remember = true) => {
     const response = await authApi.login({ email, password });
@@ -91,13 +93,23 @@ export function AuthProvider({ children }) {
   const refreshUser = async () => {
     try {
       const res = await authApi.getMe();
-      if (res?.data) {
-        setUser(res.data);
-        setStoredUser(res.data);
+      const raw = res?.data || res;
+      if (raw) {
+        const formatted = formatUser(raw);
+        setUser(formatted);
+        setStoredUser(formatted);
+        return formatted;
       }
     } catch (e) {
       console.error('Failed to refresh user:', e);
     }
+  };
+
+  const updateUser = (newUserData) => {
+    const formatted = formatUser({ ...user, ...newUserData });
+    setUser(formatted);
+    setStoredUser(formatted);
+    return formatted;
   };
 
   const value = {
@@ -111,6 +123,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     refreshUser,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

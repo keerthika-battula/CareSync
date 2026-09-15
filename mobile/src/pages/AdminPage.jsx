@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldAlert, Users, UserPlus, Search, CheckCircle2, XCircle, 
-  Eye, RefreshCw, Pill, Calendar, FileText, UserCheck, UserX, 
+  Eye, EyeOff, Lock, RefreshCw, Pill, Calendar, FileText, UserCheck, UserX, 
   Download, ChevronLeft, ChevronRight, Shield 
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -23,8 +23,10 @@ export default function AdminPage() {
 
   // Create User Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [showAdminCreatePassword, setShowAdminCreatePassword] = useState(false);
   const [createForm, setCreateForm] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     role: 'USER',
@@ -64,17 +66,34 @@ export default function AdminPage() {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    if (!createForm.email || !createForm.password || !createForm.fullName) {
-      addToast('All fields are required', 'warning');
+    const firstName = createForm.firstName.trim();
+    const lastName = createForm.lastName.trim();
+    const email = createForm.email.trim();
+    const password = createForm.password;
+
+    if (!firstName || !lastName || !email || !password) {
+      addToast('First name, last name, email, and password are required', 'warning');
+      return;
+    }
+
+    if (password.length < 6) {
+      addToast('Password must be at least 6 characters', 'warning');
       return;
     }
 
     try {
       setSubmitting(true);
-      await adminApi.createUser(createForm);
-      addToast(`User ${createForm.email} created successfully`, 'success');
+      await adminApi.createUser({
+        firstName,
+        lastName,
+        email,
+        password,
+        role: createForm.role,
+      });
+      addToast(`User ${email} created successfully`, 'success');
       setIsCreateModalOpen(false);
-      setCreateForm({ fullName: '', email: '', password: '', role: 'USER' });
+      setCreateForm({ firstName: '', lastName: '', email: '', password: '', role: 'USER' });
+      setShowAdminCreatePassword(false);
       fetchUsers();
     } catch (err) {
       addToast(err.message || 'Failed to create user', 'error');
@@ -354,13 +373,22 @@ export default function AdminPage() {
         maxWidth="max-w-md"
       >
         <form onSubmit={handleCreateUser} className="space-y-4">
-          <Input
-            label="Full Name *"
-            placeholder="e.g., Dr. Robert Vance"
-            value={createForm.fullName}
-            onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
-            required
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="First Name *"
+              placeholder="e.g., Robert"
+              value={createForm.firstName}
+              onChange={(e) => setCreateForm({ ...createForm, firstName: e.target.value })}
+              required
+            />
+            <Input
+              label="Last Name *"
+              placeholder="e.g., Vance"
+              value={createForm.lastName}
+              onChange={(e) => setCreateForm({ ...createForm, lastName: e.target.value })}
+              required
+            />
+          </div>
 
           <Input
             label="Email Address *"
@@ -373,11 +401,26 @@ export default function AdminPage() {
 
           <Input
             label="Initial Password *"
-            type="password"
+            type={showAdminCreatePassword ? 'text' : 'password'}
             placeholder="Minimum 6 characters"
+            icon={Lock}
             value={createForm.password}
             onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
             required
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowAdminCreatePassword((prev) => !prev)}
+                aria-label={showAdminCreatePassword ? 'Hide password' : 'Show password'}
+                className="text-slate-400 hover:text-slate-600 focus:outline-none focus:text-indigo-600 transition-colors p-1 rounded-lg"
+              >
+                {showAdminCreatePassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            }
           />
 
           <Select

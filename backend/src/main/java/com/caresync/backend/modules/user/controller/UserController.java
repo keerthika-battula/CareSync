@@ -5,6 +5,7 @@ import com.caresync.backend.modules.auth.dto.ChangePasswordRequest;
 import com.caresync.backend.modules.auth.entity.User;
 import com.caresync.backend.modules.user.dto.AdminUserResponse;
 import com.caresync.backend.modules.user.dto.PublicUserNameResponse;
+import com.caresync.backend.modules.user.dto.UpdateProfileRequest;
 import com.caresync.backend.modules.user.service.PublicUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,14 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<AdminUserResponse>> getCurrentUser(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(ApiResponse.success(AdminUserResponse.fromEntity(user)));
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResponse<AdminUserResponse>> updateProfile(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        AdminUserResponse updatedUser = publicUserService.updateProfile(user, request);
+        return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", updatedUser));
     }
 
     @PostMapping("/change-password")

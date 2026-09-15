@@ -151,6 +151,14 @@ export const authApi = {
       confirmPassword: data.confirmPassword || data.newPassword,
     }),
   }),
+  updateProfile: (data) => request('/api/v1/users/profile', {
+    method: 'PUT',
+    body: JSON.stringify({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phoneNumber: data.phoneNumber,
+    }),
+  }),
   getMe: () => request('/api/v1/users/me'),
 };
 
