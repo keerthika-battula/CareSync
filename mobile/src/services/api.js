@@ -137,7 +137,11 @@ export const authApi = {
   }),
   resetPassword: (data) => request('/api/auth/reset-password', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      email: data.email,
+      code: data.code || data.token,
+      newPassword: data.newPassword,
+    }),
   }),
   getMe: () => request('/api/v1/users/me'),
 };
