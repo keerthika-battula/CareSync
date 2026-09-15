@@ -36,8 +36,9 @@ public class AdminUserController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<AdminUserResponse>>> getAllUsers(
+            @RequestParam(required = false) Boolean activeOnly,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        PageResponse<AdminUserResponse> users = adminUserService.getAllUsers(pageable);
+        PageResponse<AdminUserResponse> users = adminUserService.getAllUsers(activeOnly, pageable);
         return ResponseEntity.ok(ApiResponse.success(users));
     }
 
@@ -123,7 +124,7 @@ public class AdminUserController {
     public ResponseEntity<ApiResponse<Void>> deleteUser(
             @PathVariable UUID userId,
             @org.springframework.security.core.annotation.AuthenticationPrincipal com.caresync.backend.modules.auth.entity.User currentUser) {
-        adminUserService.deleteUser(userId, currentUser);
-        return ResponseEntity.ok(ApiResponse.success("User account removed successfully", null));
+        String message = adminUserService.deleteUser(userId, currentUser);
+        return ResponseEntity.ok(ApiResponse.success(message, null));
     }
 }

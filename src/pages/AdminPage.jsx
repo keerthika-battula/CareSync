@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active'); // 'active' | 'deactivated' | 'all'
 
   // Create User Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -49,7 +50,8 @@ export default function AdminPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await adminApi.getUsers(page, 20);
+      const activeParam = statusFilter === 'active' ? true : statusFilter === 'deactivated' ? false : null;
+      const res = await adminApi.getUsers(page, 20, activeParam);
       const data = res?.data || res;
       if (Array.isArray(data)) {
         setUsers(data);
@@ -69,7 +71,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [page]);
+  }, [page, statusFilter]);
+
+  const handleStatusFilterChange = (filter) => {
+    setStatusFilter(filter);
+    setPage(0);
+  };
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
@@ -135,10 +142,12 @@ export default function AdminPage() {
     if (!userToDelete) return;
     try {
       setIsDeleting(true);
-      await adminApi.deleteUser(userToDelete.id);
-      addToast('User account removed successfully.', 'success');
+      const res = await adminApi.deleteUser(userToDelete.id);
+      const successMessage = res?.message || 'User account removed successfully.';
+      addToast(successMessage, 'success');
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
       if (users.length === 1 && page > 0) {
         setPage((p) => p - 1);
       } else {
@@ -236,7 +245,13 @@ export default function AdminPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-slate-500">Total Registered Users</p>
+              <p className="text-xs font-medium text-slate-500">
+                {statusFilter === 'active'
+                  ? 'Active Directory Users'
+                  : statusFilter === 'deactivated'
+                  ? 'Deactivated Accounts'
+                  : 'Total User Accounts'}
+              </p>
               <h3 className="text-2xl font-bold text-slate-900 mt-1">{users.length}</h3>
             </div>
             <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
@@ -274,17 +289,57 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      {/* Search Bar */}
+      {/* Filter and Search Bar */}
       <Card>
         <CardContent className="p-4">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-            <Input
-              placeholder="Search users by name, email, or role..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            {/* Status Filter Tabs */}
+            <div className="inline-flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/80 text-xs font-medium self-start md:self-auto">
+              <button
+                type="button"
+                onClick={() => handleStatusFilterChange('active')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  statusFilter === 'active'
+                    ? 'bg-white text-teal-700 font-semibold shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Active Users (Default)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleStatusFilterChange('deactivated')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  statusFilter === 'deactivated'
+                    ? 'bg-white text-teal-700 font-semibold shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Deactivated / Removed Users
+              </button>
+              <button
+                type="button"
+                onClick={() => handleStatusFilterChange('all')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  statusFilter === 'all'
+                    ? 'bg-white text-teal-700 font-semibold shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All Users
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative flex-1 md:max-w-md">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <Input
+                placeholder="Search users by name, email, or role..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -314,7 +369,7 @@ export default function AdminPage() {
               ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-12 text-center text-slate-500">
-                    No users found matching your search.
+                    No users found matching your search or current status filter.
                   </td>
                 </tr>
               ) : (

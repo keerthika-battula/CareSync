@@ -30,6 +30,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     List<User> findAllByRoleAndIsActiveTrue(Role role);
 
+    org.springframework.data.domain.Page<User> findAllByIsActive(boolean isActive, org.springframework.data.domain.Pageable pageable);
+
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.role = :role AND u.isActive = true")
     List<User> findAllActiveAdminsForUpdate(@org.springframework.data.repository.query.Param("role") Role role);

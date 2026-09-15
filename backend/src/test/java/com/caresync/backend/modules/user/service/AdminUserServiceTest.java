@@ -126,13 +126,27 @@ class AdminUserServiceTest {
         Page<User> userPage = new PageImpl<>(List.of(sampleUser, sampleAdmin), pageable, 2);
         when(userRepository.findAll(pageable)).thenReturn(userPage);
 
-        PageResponse<AdminUserResponse> result = adminUserService.getAllUsers(pageable);
+        PageResponse<AdminUserResponse> result = adminUserService.getAllUsers(null, pageable);
 
         assertNotNull(result);
         assertEquals(2, result.getContent().size());
         assertEquals("john.doe@example.com", result.getContent().get(0).getEmail());
         assertEquals(Role.USER, result.getContent().get(0).getRole());
         assertEquals(Role.ADMIN, result.getContent().get(1).getRole());
+    }
+
+    @Test
+    @DisplayName("Admin can list only active users")
+    void testGetAllUsers_ActiveOnly() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<User> userPage = new PageImpl<>(List.of(sampleUser, sampleAdmin), pageable, 2);
+        when(userRepository.findAllByIsActive(true, pageable)).thenReturn(userPage);
+
+        PageResponse<AdminUserResponse> result = adminUserService.getAllUsers(true, pageable);
+
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        verify(userRepository).findAllByIsActive(true, pageable);
     }
 
     @Test
@@ -329,8 +343,9 @@ class AdminUserServiceTest {
         when(documentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
         when(appointmentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
 
-        adminUserService.deleteUser(userId, sampleAdmin);
+        String message = adminUserService.deleteUser(userId, sampleAdmin);
 
+        assertEquals("User account deleted successfully.", message);
         verify(fcmTokenRepository).deleteAllByUserId(userId);
         verify(passwordResetTokenRepository).deleteAllByUser(sampleUser);
         verify(reminderOccurrenceRepository).deleteAllByUserId(userId);
@@ -347,8 +362,9 @@ class AdminUserServiceTest {
         when(documentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
         when(appointmentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
 
-        adminUserService.deleteUser(userId, sampleAdmin);
+        String message = adminUserService.deleteUser(userId, sampleAdmin);
 
+        assertEquals("User account deactivated successfully; healthcare records were preserved.", message);
         verify(fcmTokenRepository).deleteAllByUserId(userId);
         verify(passwordResetTokenRepository).deleteAllByUser(sampleUser);
         assertFalse(sampleUser.isActive());

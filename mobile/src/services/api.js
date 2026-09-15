@@ -233,7 +233,13 @@ export const statsApi = {
 };
 
 export const adminApi = {
-  getUsers: (page = 0, size = 20) => request(`/api/v1/admin/users?page=${page}&size=${size}`),
+  getUsers: (page = 0, size = 20, activeOnly = null) => {
+    let url = `/api/v1/admin/users?page=${page}&size=${size}`;
+    if (activeOnly !== null && activeOnly !== undefined) {
+      url += `&activeOnly=${activeOnly}`;
+    }
+    return request(url);
+  },
   getUserById: (id) => request(`/api/v1/admin/users/${id}`),
   createUser: (data) => request('/api/v1/admin/users', {
     method: 'POST',

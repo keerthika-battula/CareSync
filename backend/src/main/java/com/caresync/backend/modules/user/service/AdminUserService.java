@@ -68,8 +68,13 @@ public class AdminUserService {
     private final MinioService minioService;
 
     @Transactional(readOnly = true)
-    public PageResponse<AdminUserResponse> getAllUsers(Pageable pageable) {
-        Page<User> page = userRepository.findAll(pageable);
+    public PageResponse<AdminUserResponse> getAllUsers(Boolean activeOnly, Pageable pageable) {
+        Page<User> page;
+        if (activeOnly != null) {
+            page = userRepository.findAllByIsActive(activeOnly, pageable);
+        } else {
+            page = userRepository.findAll(pageable);
+        }
         return PageResponse.from(page.map(AdminUserResponse::fromEntity));
     }
 
@@ -217,7 +222,7 @@ public class AdminUserService {
     }
 
     @Transactional
-    public void deleteUser(UUID userId, User currentAdmin) {
+    public String deleteUser(UUID userId, User currentAdmin) {
         if (currentAdmin != null && currentAdmin.getId().equals(userId)) {
             throw new BadRequestException("Administrators cannot remove their own account.");
         }
@@ -258,6 +263,7 @@ public class AdminUserService {
                     userId, activeMedicines, docs, appts);
             user.setActive(false);
             userRepository.save(user);
+            return "User account deactivated successfully; healthcare records were preserved.";
         } else {
             // Clean deletion of empty user / test account
             try {
@@ -267,11 +273,13 @@ public class AdminUserService {
                 }
                 userRepository.delete(user);
                 log.info("User {} successfully removed permanently.", userId);
+                return "User account deleted successfully.";
             } catch (Exception e) {
                 // Safe fallback to deactivation if any DB constraints or relations exist
                 log.warn("Permanent deletion could not complete for user {}, falling back to deactivation: {}", userId, e.getMessage());
                 user.setActive(false);
                 userRepository.save(user);
+                return "User account deactivated successfully; healthcare records were preserved.";
             }
         }
     }
