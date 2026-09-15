@@ -2,13 +2,13 @@
 
 ## Your Care. In Sync. On Time.
 
-CareSync is a personal healthcare organization and reminder platform designed to help individuals and families centralize their medications, dosing schedules, family profiles, doctor appointments, medical documents, and inventory refills in a single, secure environment.
+CareSync is a full-stack personal and family healthcare organization platform designed to help individuals and caregivers centralize medications, dosage schedules, family care circles, doctor appointments, medical documents, and inventory refill alerts in a single, secure web application.
 
 ---
 
 ## Why CareSync?
 
-Managing personal and family health is increasingly complicated. Vital healthcare information is frequently scattered across disparate paper prescriptions, calendar reminders, physical document folders, pharmacy receipts, and manual notes. This fragmentation leads to:
+Managing personal and family healthcare is increasingly complicated. Vital healthcare information is frequently scattered across disparate paper prescriptions, calendar reminders, physical document folders, pharmacy receipts, and manual notes. This fragmentation leads to:
 
 - Missed or mistimed medication doses
 - Overlooked prescription expiration dates and unexpected medication stockouts
@@ -16,7 +16,7 @@ Managing personal and family health is increasingly complicated. Vital healthcar
 - Disorganized medical records during doctor consultations
 - Insecure document handling across personal devices
 
-CareSync addresses these challenges by centralizing healthcare organization into a unified, secure platform with automated reminder scheduling, proactive refill tracking, and role-based access control.
+CareSync addresses these challenges by centralizing healthcare organization into a unified, responsive web application with automated reminder scheduling, proactive refill tracking, role-based access control, and secure cloud medical record vaults.
 
 > **IMPORTANT DISCLAIMER**  
 > CareSync is an administrative healthcare organization and reminder platform. It does **NOT** provide medical diagnosis, treatment recommendations, prescription generation, dosage recommendations, or automated medical decision-making. Users should always consult qualified healthcare professionals regarding any medical condition, diagnosis, or prescription regimen.
@@ -25,16 +25,16 @@ CareSync addresses these challenges by centralizing healthcare organization into
 
 ## Features
 
-### User Features
+### User & Patient Features
 - **Authentication & Sessions**: Self-service registration and login backed by stateless JWT authentication, secure credential storage, and automatic session restoration.
-- **Unified Dashboard**: Real-time adherence indicators, today's schedule summary, quick-action shortcuts, and dynamic greeting with localized time and date.
-- **Medication Management**: Comprehensive tracking of active medications, custom dosage instructions, frequencies, timing, and optional clinical notes.
+- **Unified Dashboard**: Real-time adherence indicators, today's schedule timeline, refill warnings, upcoming doctor visits, and quick-action shortcuts.
+- **Medication Management**: Comprehensive tracking of active medications, dosage strengths, multiple scheduled reminder times per day, weekly recurrence options, and clinical notes.
 - **Stock Tracking & Refill Alerts**: Real-time remaining medication quantity tracking with automated warning badges whenever stock dips below user-configured refill thresholds.
-- **Family Profiles**: Manage dependent family members under a single primary account to coordinate pediatric, elder, or spousal care.
-- **Public Community Directory**: Privacy-preserving directory enabling discovery of community members by display name only, without exposing private healthcare data.
-- **Appointment Scheduling**: Log upcoming doctor consultations, hospital/clinic locations, consultation purposes, and reminder alert lead times.
+- **Daily Dose Actions**: Interactive dose logging with live **Take Dose**, **Skip**, and **Snooze** (+15m, +30m, +60m) capabilities.
+- **Family Care Circle**: Manage dependent family profiles (children, parents, spouses) under a single primary account to coordinate pediatric, elder, or spousal care.
+- **Visits & Appointments**: Log upcoming doctor consultations, hospital/clinic locations, consultation purposes, and reminder alert lead times.
 - **Secure Medical Documents**: Upload, preview, and download medical records, lab results, and prescriptions with binary streaming and S3/MinIO isolation.
-- **Profile Management**: View authenticated identity details, security status, and initiate secure sign-out.
+- **Profile & Account Security**: View authenticated identity details, update passwords, and initiate secure sign-out.
 
 ### Admin & Role-Based Access Control (RBAC)
 - **Role Hierarchy**: Two distinct roles (`USER` and `ADMIN`) strictly validated on the backend.
@@ -42,7 +42,6 @@ CareSync addresses these challenges by centralizing healthcare organization into
 - **User Directory & Account Controls**: Paginated and searchable directory enabling administrators to inspect user accounts, create new accounts, and update account states.
 - **Activation & Deactivation**: Soft-delete account status toggling that immediately revokes login access for deactivated users while preserving underlying healthcare data integrity.
 - **Role Elevation & Demotion**: Promotion of users to `ADMIN` and demotion of administrators to `USER`.
-- **Last-Active-Admin Protection**: Concurrency-safe database validation preventing the system from ever reaching zero active administrators.
 - **Authorized Healthcare Inspection**: Administrative read-only access to managed users' medicines, documents, appointments, and family profiles via lazy-loaded record dialogs.
 
 ### Security
@@ -51,8 +50,6 @@ CareSync addresses these challenges by centralizing healthcare organization into
 - **Password Security**: Strong password hashing using Spring Security's `BCryptPasswordEncoder`.
 - **Stateless JWT Tokens**: Signed authentication tokens with configurable expiration and secret injection.
 - **Disabled Account Lockout**: Blocked authentication for accounts flagged with `isActive: false`.
-- **Environment Isolation**: Zero hardcoded credentials or fallback production secrets in source configuration; all sensitive keys are injected via environment variables.
-- **Repository Cleanliness**: Git rules strictly ignore `.env`, credentials, certificates, and build artifacts.
 
 ---
 
@@ -60,16 +57,14 @@ CareSync addresses these challenges by centralizing healthcare organization into
 
 | Layer | Technologies |
 |---|---|
-| **Frontend** | Flutter (3.x), Flutter Web / PWA, Riverpod, GoRouter, Dio |
-| **Backend** | Java 21, Spring Boot 3.3.x, Spring Security, Spring Data JPA |
+| **Frontend Web App** | React 18, JavaScript (ES2022), Vite, Tailwind CSS, shadcn/ui patterns, Lucide Icons, Date-fns |
+| **Backend API** | Java 21, Spring Boot 3.3.x, Spring Security, Spring Data JPA |
 | **Database** | PostgreSQL 16 |
 | **Database Migrations** | Flyway |
 | **Scheduling** | Quartz Scheduler (Persistent JDBC JobStore) |
 | **Object Storage** | MinIO (Local) / S3-Compatible Object Storage (Production) |
 | **API Documentation** | Swagger / OpenAPI 3 (SpringDoc) |
-| **Code Quality** | SonarQube |
-| **Testing** | JUnit 5, Mockito, Spring Boot Test, Flutter Test |
-| **Infrastructure & Deployment** | Docker, Docker Compose, Render (Target Deployment) |
+| **Containerization** | Docker, Docker Compose, Nginx Alpine |
 
 ---
 
@@ -77,14 +72,14 @@ CareSync addresses these challenges by centralizing healthcare organization into
 
 ```mermaid
 flowchart TD
-    subgraph Client["Client Tier"]
-        User([User / Admin])
-        FlutterApp["Flutter Web / PWA Client<br/>(Riverpod + GoRouter)"]
-        User --> FlutterApp
+    subgraph Client["Web Client (React.js + Tailwind CSS)"]
+        User([Patient / Caregiver / Admin])
+        ReactApp["React 18 SPA (Vite + shadcn/ui)<br/>Tailwind CSS + Lucide Icons"]
+        User --> ReactApp
     end
 
     subgraph Gateway["API & Security Layer"]
-        FlutterApp -->|"HTTPS / REST + Bearer JWT"| SpringBoot["Spring Boot 3.x REST API"]
+        ReactApp -->|"HTTPS / REST + Bearer JWT"| SpringBoot["Spring Boot 3.x REST API"]
         SpringBoot --> SecurityFilter["Spring Security Filter Chain<br/>(JwtAuthFilter + BCrypt)"]
         SecurityFilter --> RBAC["RBAC & Ownership Validation<br/>(USER vs ADMIN)"]
     end
@@ -114,22 +109,26 @@ flowchart TD
 
 ```text
 CareSync/
+├── frontend/                 # Modern React.js + Tailwind CSS + shadcn/ui Web Application
+│   ├── src/
+│   │   ├── components/       # UI library (Button, Modal, Card, Select, Badge, Input) & Layout
+│   │   ├── context/          # AuthContext (JWT & RBAC), ToastContext (Notifications)
+│   │   ├── pages/            # Feature pages (Dashboard, Medicines, Reminders, Visits, Family, Docs, Admin, Profile)
+│   │   ├── services/         # Axios/Fetch API client with JWT interceptors & blob streaming
+│   │   └── utils/            # Styling utility helpers (clsx, tailwind-merge)
+│   ├── index.html            # HTML entry point with Plus Jakarta Sans typography
+│   ├── vite.config.js        # Vite bundler configuration & local API proxy
+│   ├── tailwind.config.js    # Tailwind theme configuration
+│   ├── Dockerfile            # Multi-stage production build (Node 20 + Nginx Alpine)
+│   └── nginx.conf            # Nginx SPA fallback routing & asset caching
 ├── backend/                  # Spring Boot REST API application
 │   ├── src/main/java/        # Application modules (auth, medicine, appointment, family, document, user)
 │   ├── src/main/resources/   # Application configuration and Flyway SQL migrations
+│   ├── Dockerfile            # Multi-stage production build (Eclipse Temurin Java 21)
 │   └── pom.xml               # Maven dependencies and build configuration
-├── mobile/                   # Flutter cross-platform client (Web / PWA and mobile)
-│   ├── lib/                  # Application source (core, features, shared widgets)
-│   ├── test/                 # Automated unit and widget tests
-│   └── pubspec.yaml          # Flutter dependencies and asset declarations
-├── web/                      # Static landing page assets
-├── docker-compose.yml        # Local development infrastructure (PostgreSQL, Redis, MinIO)
-├── .env.example              # Template configuration for environment variables
-├── .gitignore                # Repository-wide exclusion rules
+├── docker-compose.yml        # Fullstack local container orchestration (PostgreSQL, MinIO, Redis, Backend, Frontend)
 └── README.md                 # Project documentation
 ```
-
-> **Note on Client**: The `mobile/` directory contains the unified Flutter codebase providing full Flutter Web/PWA support and responsive desktop/mobile viewports.
 
 ---
 
@@ -145,95 +144,38 @@ All protected endpoints require an `Authorization: Bearer <token>` header obtain
 
 ---
 
-## Testing & Quality
-
-All automated test suites pass locally:
-
-### Backend Verification
-- **Test Framework**: JUnit 5, Mockito, Spring Boot Integration Test
-- **Test Count**: **54 / 54 passed** (0 failures, 0 errors, 0 skipped)
-- **Status**: `BUILD SUCCESS`
-- **Coverage**: Covers JWT authentication, last-admin concurrency safety, IDOR authorization barriers, medicine and stock bounds, appointment management, and administrative endpoints.
-
-### Frontend Verification
-- **Static Analysis**: `flutter analyze` — **No issues found** (0 errors, 0 warnings, 0 hints)
-- **Widget & Unit Tests**: `flutter test` — **8 / 8 passed**
-- **Production Web Build**: `flutter build web --release` — **Successful**
-
----
-
-## Security & Privacy
-
-1. **Healthcare Data Isolation**: Healthcare records (medicines, documents, appointments) are strictly private to their owning account. Normal users cannot access, modify, or view other users' records.
-2. **Backend Enforcement**: Authorization is evaluated on the server. Hiding or showing UI elements is cosmetic; every API invocation validates permissions and identity.
-3. **Account Protection**: Passwords meet length requirements and are stored as one-way BCrypt hashes.
-4. **Environment Hygiene**: No production credentials, database passwords, or JWT signing keys are stored in version control. All values are sourced at runtime via environment variables.
-
----
-
-## Production Deployment (Planned)
-
-Production deployment is planned for [Render](https://render.com) using the following architecture:
-
-- **Database**: Managed PostgreSQL on Render
-- **Backend API**: Render Web Service (containerized Spring Boot Java 21)
-- **Frontend Client**: Render Static Site (serving optimized `flutter build web --release` bundle)
-- **Document Storage**: Managed S3-compatible cloud object storage
-- **Configuration**: Managed environment variables configured securely in the Render Dashboard
-
-*(Note: The platform is currently configured for local and development environments; production deployment on Render is the planned operational target).*
-
----
-
-## Screenshots
-
-> Screenshots coming soon.
-
----
-
-## Local Development
+## Local Development & Setup
 
 ### Prerequisites
-- Java 21 JDK
-- Apache Maven 3.9+
-- Flutter SDK (3.22+)
+- Node.js 20+ & npm
+- Java 21 JDK & Maven 3.9+
 - Docker & Docker Compose
-- Google Chrome (for web testing)
 
-### 1. Configure Environment
-Copy `.env.example` to create your local environment file:
-```bash
-cp .env.example .env
-```
-Fill in your local passwords and configuration values.
-
-### 2. Start Local Infrastructure
+### 1. Start Infrastructure via Docker Compose
 Launch PostgreSQL, Redis, and MinIO:
 ```bash
-docker compose up -d
-```
-Verify containers are running:
-```bash
-docker compose ps
+docker compose up -d postgres minio redis
 ```
 
-### 3. Run Backend
+### 2. Run Backend
 ```bash
 cd backend
-mvn clean compile
 mvn spring-boot:run
 ```
-The backend starts on `http://localhost:8080`. Health check: `curl http://localhost:8080/actuator/health`.
+The backend will start on `http://localhost:8080`.
 
-### 4. Run Frontend (Web)
+### 3. Run Frontend (React Dev Server)
 ```bash
-cd mobile
-flutter pub get
-flutter run -d chrome
+cd frontend
+npm install
+npm run dev
 ```
-To build the static web release bundle:
-```bash
-flutter build web --release
-```
-The production bundle will be generated in `mobile/build/web/`.
+Open `http://localhost:5173` in your browser. The Vite development server will automatically proxy API requests to `http://localhost:8080`.
 
+### 4. Build Production Bundle
+To create an optimized production build of the React web app:
+```bash
+cd frontend
+npm run build
+```
+The production bundle will be created in `frontend/dist/`.

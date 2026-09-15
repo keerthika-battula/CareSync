@@ -83,6 +83,15 @@ mobile/.gradle/
 local.properties
 **/local.properties
 
+# Node.js / Frontend
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.vite/
+**/.vite/
+*.tsbuildinfo
+
 # Misc temporary files
 *.tmp
 *.swp

@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME:-caresync_db}
       POSTGRES_USER: ${DB_USER:-caresync_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-caresync_secure_password_2026}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -27,8 +27,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ':9001'
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-caresyncadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-caresyncsecret2026}
     volumes:
       - minio_data:/data
     ports:
@@ -46,7 +46,7 @@ services:
     image: redis:7-alpine
     container_name: caresync-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redispassword2026}
     volumes:
       - redis_data:/data
     ports:
@@ -54,38 +54,55 @@ services:
     networks:
       - caresync-network
     healthcheck:
-      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redispassword2026}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Backend service (uncomment when Dockerfile is ready)
-  # backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   container_name: caresync-backend
-  #   restart: unless-stopped
-  #   environment:
-  #     SPRING_PROFILES_ACTIVE: prod
-  #     DB_HOST: postgres
-  #     DB_PORT: 5432
-  #     DB_NAME: ${DB_NAME:-caresync_db}
-  #     DB_USER: ${DB_USER:-caresync_user}
-  #     DB_PASSWORD: ${DB_PASSWORD}
-  #     MINIO_ENDPOINT: http://minio:9000
-  #     MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-  #     MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-  #     JWT_SECRET: ${JWT_SECRET}
-  #   ports:
-  #     - "${SERVER_PORT:-8080}:8080"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     minio:
-  #       condition: service_healthy
-  #   networks:
-  #     - caresync-network
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: caresync-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-caresync_db}
+      DB_USER: ${DB_USER:-caresync_user}
+      DB_PASSWORD: ${DB_PASSWORD:-caresync_secure_password_2026}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-caresyncadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-caresyncsecret2026}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispassword2026}
+      JWT_SECRET: ${JWT_SECRET:-dGhpcy1pcy1hLXNlY3VyZS0yNTYtYml0LXNlY3JldC1rZXktZm9yLWNhcmVzeW5jLWFwcGxpY2F0aW9uLTIwMjY=}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - caresync-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: caresync-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+    networks:
+      - caresync-network
 
 volumes:
   postgres_data:
