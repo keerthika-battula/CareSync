@@ -618,8 +618,8 @@ export default function AdminPage() {
         <div className="space-y-4">
           <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-800 text-sm flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-rose-900 leading-relaxed">
-              This action will permanently remove the user account and its associated access. This cannot be undone.
+            <div className="text-xs text-rose-900 leading-relaxed font-medium">
+              Are you sure you want to remove this user? This action cannot be undone.
             </div>
           </div>
 
@@ -657,7 +657,7 @@ export default function AdminPage() {
               className="bg-rose-600 hover:bg-rose-700 text-white"
             >
               <Trash2 className="w-4 h-4 mr-1.5" />
-              {isDeleting ? 'Removing...' : 'Remove User'}
+              {isDeleting ? 'Deleting...' : 'Confirm Delete'}
             </Button>
           </div>
         </div>
