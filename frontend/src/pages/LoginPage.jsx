@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Heart, Lock, Mail, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import { Heart, Lock, Mail, ArrowRight, AlertCircle, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Button } from '../components/ui/Button';
@@ -10,6 +10,7 @@ import { Card } from '../components/ui/Card';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [statusNote, setStatusNote] = useState('');
@@ -56,18 +57,6 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemoPatient = () => {
-    setEmail('testpatient2026@caresync.com');
-    setPassword('Password123!');
-    setError('');
-  };
-
-  const fillDemoAdmin = () => {
-    setEmail('battula.keerthika0@gmail.com');
-    setPassword('Password123!');
-    setError('');
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
       <div className="max-w-md w-full space-y-6">
@@ -105,17 +94,34 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoFocus
+              autoComplete="email"
             />
 
             <div className="space-y-1">
               <Input
                 label="Password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 icon={Lock}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                rightElement={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="text-slate-400 hover:text-slate-600 focus:outline-none focus:text-indigo-600 transition-colors p-1 rounded-lg"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                }
               />
               <div className="flex justify-end pt-1">
                 <Link
@@ -157,30 +163,6 @@ export default function LoginPage() {
               <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
           </form>
-
-          {/* Quick Demo Credentials */}
-          <div className="mt-6 pt-6 border-t border-slate-100 space-y-2">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center flex items-center justify-center gap-1.5">
-              <Sparkles className="h-3 w-3 text-indigo-500" />
-              Quick Demo Logins
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={fillDemoPatient}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition-colors text-center"
-              >
-                👤 Demo Patient
-              </button>
-              <button
-                type="button"
-                onClick={fillDemoAdmin}
-                className="px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors text-center"
-              >
-                🛡️ Demo Admin
-              </button>
-            </div>
-          </div>
         </Card>
 
         {/* Register Link */}
