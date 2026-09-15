@@ -194,7 +194,7 @@ export default function LandingPage() {
               Everything You Need to Manage Daily Healthcare
             </h3>
             <p className="text-slate-600 text-sm sm:text-base">
-              Unified healthcare tools built on top of high-performance Spring Boot REST services, providing seamless clinical precision and patient compliance.
+              Unified healthcare tools providing seamless clinical precision, patient compliance, and family health management.
             </p>
           </div>
 
@@ -327,7 +327,13 @@ export default function LandingPage() {
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <p>© 2026 CareSync Healthcare Platform. All rights reserved.</p>
-            <p>Built with React.js, Tailwind CSS, shadcn/ui, and Spring Boot.</p>
+            <div className="flex items-center gap-3 text-xs text-slate-400">
+              <span className="hover:text-slate-300 transition-colors cursor-pointer">Privacy Policy</span>
+              <span className="text-slate-700">|</span>
+              <span className="hover:text-slate-300 transition-colors cursor-pointer">Terms of Service</span>
+              <span className="text-slate-700">|</span>
+              <span className="hover:text-slate-300 transition-colors cursor-pointer">Contact</span>
+            </div>
           </div>
         </div>
       </footer>
