@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   User, Mail, Shield, Lock, KeyRound, CheckCircle2, 
-  AlertCircle, LogOut, HeartPulse 
+  AlertCircle, LogOut, HeartPulse, Eye, EyeOff 
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -20,32 +20,37 @@ export default function ProfilePage() {
     newPassword: '',
     confirmPassword: '',
   });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submittingPassword, setSubmittingPassword] = useState(false);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
+    if (!passwordForm.currentPassword) {
+      addToast('Please enter your current password', 'warning');
+      return;
+    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      addToast('New passwords do not match', 'warning');
+      addToast('New password and confirm password do not match', 'error');
       return;
     }
     if (passwordForm.newPassword.length < 6) {
-      addToast('Password must be at least 6 characters', 'warning');
+      addToast('Password must be at least 6 characters', 'error');
       return;
     }
 
     try {
       setSubmittingPassword(true);
-      // Backend password change / reset
-      await authApi.resetPassword({
-        email: user?.email,
-        token: passwordForm.currentPassword,
+      await authApi.changePassword({
+        currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
+        confirmPassword: passwordForm.confirmPassword,
       });
-      addToast('Password updated successfully', 'success');
+      addToast('Password updated successfully! Please use your new password next time you sign in.', 'success');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      // If endpoint needs token or specific logic, notify user gracefully
-      addToast(err.message || 'Failed to change password. You can also use the Forgot Password flow on login.', 'info');
+      addToast(err.message || 'Failed to update password', 'error');
     } finally {
       setSubmittingPassword(false);
     }
@@ -121,29 +126,74 @@ export default function ProfilePage() {
           <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
             <Input
               label="Current Password"
-              type="password"
+              type={showCurrentPassword ? 'text' : 'password'}
               placeholder="••••••••"
+              icon={Lock}
               value={passwordForm.currentPassword}
               onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
               required
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword((prev) => !prev)}
+                  aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                  className="text-slate-400 hover:text-slate-600 focus:outline-none focus:text-indigo-600 transition-colors p-1 rounded-lg"
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              }
             />
 
             <Input
               label="New Password"
-              type="password"
+              type={showNewPassword ? 'text' : 'password'}
               placeholder="At least 6 characters"
+              icon={Lock}
               value={passwordForm.newPassword}
               onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
               required
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                  className="text-slate-400 hover:text-slate-600 focus:outline-none focus:text-indigo-600 transition-colors p-1 rounded-lg"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              }
             />
 
             <Input
               label="Confirm New Password"
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               placeholder="Repeat new password"
+              icon={Lock}
               value={passwordForm.confirmPassword}
               onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
               required
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  className="text-slate-400 hover:text-slate-600 focus:outline-none focus:text-indigo-600 transition-colors p-1 rounded-lg"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              }
             />
 
             <div className="pt-2">

@@ -143,6 +143,14 @@ export const authApi = {
       newPassword: data.newPassword,
     }),
   }),
+  changePassword: (data) => request('/api/v1/users/change-password', {
+    method: 'POST',
+    body: JSON.stringify({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword,
+      confirmPassword: data.confirmPassword || data.newPassword,
+    }),
+  }),
   getMe: () => request('/api/v1/users/me'),
 };
 
