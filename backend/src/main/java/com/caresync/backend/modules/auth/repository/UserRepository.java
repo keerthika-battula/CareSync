@@ -26,11 +26,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     long countByRoleAndIsActiveTrue(Role role);
 
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.isActive = true")
     List<User> findAllByIsActiveTrue();
 
-    List<User> findAllByRoleAndIsActiveTrue(Role role);
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.role = :role AND u.isActive = true")
+    List<User> findAllByRoleAndIsActiveTrue(@org.springframework.data.repository.query.Param("role") Role role);
 
-    org.springframework.data.domain.Page<User> findAllByIsActive(boolean isActive, org.springframework.data.domain.Pageable pageable);
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.isActive = :isActive")
+    org.springframework.data.domain.Page<User> findAllByIsActive(@org.springframework.data.repository.query.Param("isActive") boolean isActive, org.springframework.data.domain.Pageable pageable);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.role = :role AND u.isActive = true")

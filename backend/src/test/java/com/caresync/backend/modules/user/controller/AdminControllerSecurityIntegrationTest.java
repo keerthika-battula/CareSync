@@ -245,4 +245,28 @@ class AdminControllerSecurityIntegrationTest {
                 .andExpect(jsonPath("$.data[*].medicines").doesNotExist())
                 .andExpect(jsonPath("$.data[*].familyMembers").doesNotExist());
     }
+
+    @Test
+    @DisplayName("Normal USER calling DELETE /api/v1/admin/users/{userId} returns 403 Forbidden")
+    void testUserDeletingUser_Forbidden() throws Exception {
+        mockMvc.perform(delete("/api/v1/admin/users/" + adminUser.getId())
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("ADMIN deleting user via DELETE /api/v1/admin/users/{userId} succeeds and updates DB")
+    void testAdminDeleteUser_Success() throws Exception {
+        mockMvc.perform(delete("/api/v1/admin/users/" + normalUser.getId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        // When activeOnly=true is queried, deleted user is not in active list
+        mockMvc.perform(get("/api/v1/admin/users?activeOnly=true")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].email").value(adminUser.getEmail()));
+    }
 }

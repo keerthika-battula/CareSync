@@ -132,7 +132,10 @@ export default function AdminPage() {
     try {
       await adminApi.updateStatus(user.id, newStatus);
       addToast(`Account ${user.email} marked as ${newStatus ? 'Active' : 'Deactivated'}`, 'info');
-      fetchUsers();
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, isActive: newStatus } : u))
+      );
+      await fetchUsers();
     } catch (err) {
       addToast(err.message || 'Failed to update account status', 'error');
     }
@@ -140,19 +143,30 @@ export default function AdminPage() {
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
+    const targetUserId = userToDelete.id;
     try {
       setIsDeleting(true);
-      const res = await adminApi.deleteUser(userToDelete.id);
+      const res = await adminApi.deleteUser(targetUserId);
+
+      // Verify API response status
+      if (res && res.success === false) {
+        throw new Error(res.message || 'Failed to remove user account');
+      }
+
       const successMessage = res?.message || 'User account removed successfully.';
       addToast(successMessage, 'success');
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
-      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
-      if (users.length === 1 && page > 0) {
-        setPage((p) => p - 1);
-      } else {
-        fetchUsers();
-      }
+
+      // Immediately update local state so removed/deactivated user disappears from Active list
+      setUsers((prev) =>
+        prev
+          .map((u) => (u.id === targetUserId ? { ...u, isActive: false } : u))
+          .filter((u) => (statusFilter === 'active' ? u.id !== targetUserId : true))
+      );
+
+      // Re-fetch from server to sync pagination and directory state
+      await fetchUsers();
     } catch (err) {
       addToast(err.message || 'Failed to remove user account', 'error');
     } finally {
@@ -202,8 +216,16 @@ export default function AdminPage() {
     );
   };
 
-  const filteredUsers = users.filter((u) => {
-    const q = searchQuery.toLowerCase();
+  const activeTabUsers = users.filter((u) => {
+    if (statusFilter === 'active') return u.isActive !== false;
+    if (statusFilter === 'deactivated') return u.isActive === false;
+    return true;
+  });
+
+  const filteredUsers = activeTabUsers.filter((u) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+
     const displayName = getUserDisplayName(u).toLowerCase();
     return (
       u.email?.toLowerCase().includes(q) ||
@@ -252,7 +274,7 @@ export default function AdminPage() {
                   ? 'Deactivated Accounts'
                   : 'Total User Accounts'}
               </p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-1">{users.length}</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mt-1">{activeTabUsers.length}</h3>
             </div>
             <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
               <Users className="w-5 h-5" />
@@ -265,7 +287,7 @@ export default function AdminPage() {
             <div>
               <p className="text-xs font-medium text-slate-500">Administrators</p>
               <h3 className="text-2xl font-bold text-amber-600 mt-1">
-                {users.filter(u => u.role === 'ADMIN').length}
+                {activeTabUsers.filter(u => u.role === 'ADMIN').length}
               </h3>
             </div>
             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -279,7 +301,7 @@ export default function AdminPage() {
             <div>
               <p className="text-xs font-medium text-slate-500">Patients / Caregivers</p>
               <h3 className="text-2xl font-bold text-teal-700 mt-1">
-                {users.filter(u => u.role === 'USER').length}
+                {activeTabUsers.filter(u => u.role === 'USER').length}
               </h3>
             </div>
             <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">

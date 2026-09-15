@@ -251,16 +251,16 @@ public class AdminUserService {
 
         // 2. Check if user has dependent healthcare records
         List<FamilyMember> familyMembers = familyMemberRepository.findAllByUserId(userId);
-        long activeMedicines = medicineRepository.findAllByFamilyMemberUserIdAndIsActiveTrue(userId).size();
+        long medicines = medicineRepository.findAllByFamilyMemberUserId(userId).size();
         long docs = documentRepository.findAllByFamilyMemberUserId(userId).size();
         long appts = appointmentRepository.findAllByFamilyMemberUserId(userId).size();
 
-        boolean hasHealthcareData = (activeMedicines > 0 || docs > 0 || appts > 0);
+        boolean hasHealthcareData = (medicines > 0 || docs > 0 || appts > 0);
 
         if (hasHealthcareData) {
             // Patient safety & data integrity: Soft-delete/deactivate account
             log.info("User {} has healthcare records (medicines={}, docs={}, appts={}). Applying soft deletion/deactivation.",
-                    userId, activeMedicines, docs, appts);
+                    userId, medicines, docs, appts);
             user.setActive(false);
             userRepository.save(user);
             return "User account deactivated successfully; healthcare records were preserved.";

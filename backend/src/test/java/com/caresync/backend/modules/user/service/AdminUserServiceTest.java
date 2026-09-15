@@ -339,7 +339,7 @@ class AdminUserServiceTest {
     void testDeleteUser_Success_EmptyUser() {
         when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
         when(familyMemberRepository.findAllByUserId(userId)).thenReturn(Collections.emptyList());
-        when(medicineRepository.findAllByFamilyMemberUserIdAndIsActiveTrue(userId)).thenReturn(Collections.emptyList());
+        when(medicineRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
         when(documentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
         when(appointmentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
 
@@ -357,7 +357,7 @@ class AdminUserServiceTest {
     void testDeleteUser_SoftDeactivate_WhenHealthcareRecordsExist() {
         when(userRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
         when(familyMemberRepository.findAllByUserId(userId)).thenReturn(Collections.emptyList());
-        when(medicineRepository.findAllByFamilyMemberUserIdAndIsActiveTrue(userId))
+        when(medicineRepository.findAllByFamilyMemberUserId(userId))
                 .thenReturn(List.of(com.caresync.backend.modules.medicine.entity.Medicine.builder().build()));
         when(documentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
         when(appointmentRepository.findAllByFamilyMemberUserId(userId)).thenReturn(Collections.emptyList());
