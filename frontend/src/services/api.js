@@ -1,8 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || (
-  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+const API_BASE_URL = 
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? '' // use Vite proxy in dev
     : 'https://caresync-4dfr.onrender.com' // live backend in prod
-);
+  );
 
 export function getAuthToken() {
   return localStorage.getItem('caresync_token') || sessionStorage.getItem('caresync_token');

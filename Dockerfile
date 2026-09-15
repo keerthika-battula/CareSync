@@ -1,6 +1,6 @@
 # ==============================================================================
 # CareSync Frontend - React.js + Tailwind CSS + Vite Production Dockerfile
-# Fallback Dockerfile for existing Render Web Service configurations
+# Root repository context Dockerfile for Render Web Service
 # ==============================================================================
 
 # Stage 1: Build React SPA
@@ -15,10 +15,11 @@ ARG VITE_API_URL
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://caresync-4dfr.onrender.com}
 ENV VITE_API_URL=${VITE_API_URL:-https://caresync-4dfr.onrender.com}
 
-# Check if building from root context or mobile context
+# Install dependencies from frontend directory
 COPY frontend/package*.json ./
 RUN npm ci
 
+# Copy frontend source code and build production distribution
 COPY frontend/ ./
 RUN npm run build
 

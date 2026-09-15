@@ -1,0 +1,29 @@
+# Git & IDEs
+.git
+.gitignore
+.vscode
+.idea
+
+# Node / React
+node_modules
+**/node_modules
+dist
+**/dist
+.vite
+**/.vite
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Flutter legacy
+mobile/build
+mobile/.dart_tool
+
+# Backend
+target
+**/target
+*.jar
+
+# Environment & Temp
+.env
+*.tmp

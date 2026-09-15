@@ -7,8 +7,6 @@ PORT="${PORT:-10000}"
 echo "Starting CareSync React Web server on port ${PORT}..."
 
 # Replace PORT_PLACEHOLDER with the active runtime PORT
-if [ -f /etc/nginx/conf.d/default.conf.template ]; then
-  sed "s/PORT_PLACEHOLDER/${PORT}/g" /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
-fi
+sed "s/PORT_PLACEHOLDER/${PORT}/g" /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
 
 exec nginx -g 'daemon off;'
