@@ -328,7 +328,7 @@ export default function LandingPage() {
                 </Link>
                 <Link to="/login" className="w-full">
                   <Button variant="secondary" size="lg" className="w-full">
-                    Demo Credentials
+                    Sign In to Your Account
                   </Button>
                 </Link>
               </div>
