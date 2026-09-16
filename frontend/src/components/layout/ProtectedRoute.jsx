@@ -9,9 +9,17 @@ export default function ProtectedRoute({ children, requiredRole, requireAdmin = 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
-          <p className="text-sm font-semibold text-slate-500">Loading CareSync...</p>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <img
+            src="/caresync-logo-icon.png"
+            alt="CareSync Logo"
+            className="h-16 w-16 rounded-2xl object-contain shadow-lg shadow-indigo-100 border border-slate-100 animate-pulse"
+          />
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+            <p className="text-sm font-bold text-slate-800">Loading CareSync...</p>
+          </div>
+          <p className="text-xs text-slate-400 font-medium tracking-wide">Your Care. In Sync. On Time.</p>
         </div>
       </div>
     );

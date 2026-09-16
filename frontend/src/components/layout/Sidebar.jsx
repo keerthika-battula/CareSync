@@ -10,8 +10,7 @@ import {
   ShieldAlert,
   User,
   LogOut,
-  X,
-  Heart
+  X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../ui/Badge';
@@ -52,13 +51,19 @@ export function Sidebar({ isOpen, onClose }) {
       >
         {/* Brand Header */}
         <div className="flex h-16 items-center justify-between px-6 border-b border-slate-100">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-100">
-              <Heart className="h-5 w-5 fill-white" />
-            </div>
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
+            <img
+              src="/caresync-logo-icon.png"
+              alt="CareSync Logo"
+              className="h-10 w-10 rounded-xl object-contain shadow-md shadow-indigo-100 border border-slate-100 group-hover:scale-105 transition-transform"
+            />
             <div>
-              <span className="text-lg font-extrabold tracking-tight text-slate-900">Care<span className="text-indigo-600">Sync</span></span>
-              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Healthcare Platform</p>
+              <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight block">
+                Care<span className="text-indigo-600">Sync</span>
+              </span>
+              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                Healthcare Platform
+              </p>
             </div>
           </div>
           <button

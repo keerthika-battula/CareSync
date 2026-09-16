@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Mail, ArrowRight, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Mail, ArrowRight, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import { authApi } from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -35,11 +35,13 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
       <div className="max-w-md w-full space-y-6">
-        <div className="text-center space-y-2">
-          <Link to="/" className="inline-flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-100">
-              <Heart className="h-6 w-6 fill-white" />
-            </div>
+        <div className="text-center space-y-3">
+          <Link to="/" className="inline-block group transition-transform hover:scale-105">
+            <img
+              src="/caresync-logo-full-transparent.png"
+              alt="CareSync — Your Care. In Sync. On Time."
+              className="h-28 w-auto mx-auto object-contain drop-shadow-sm"
+            />
           </Link>
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Reset Your Password

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Pill, Calendar, FileUp, Heart } from 'lucide-react';
+import { Menu, Pill, Calendar, FileUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
@@ -35,9 +35,11 @@ export function Navbar({ onMenuToggle }) {
           className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group"
           onClick={() => navigate('/dashboard')}
         >
-          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-100 group-hover:scale-105 transition-transform">
-            <Heart className="h-4.5 w-4.5 sm:h-5 sm:w-5 fill-white" />
-          </div>
+          <img
+            src="/caresync-logo-icon.png"
+            alt="CareSync Logo"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl object-contain shadow-md shadow-indigo-100 border border-slate-100 group-hover:scale-105 transition-transform"
+          />
           <span className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 leading-none">
             Care<span className="text-indigo-600">Sync</span>
           </span>

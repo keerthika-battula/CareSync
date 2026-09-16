@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Heart,
   Pill,
   Calendar,
   Users,
@@ -28,11 +27,13 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 w-full border-b border-slate-100 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-100 group-hover:bg-indigo-700 transition-colors">
-              <Heart className="h-5 w-5 fill-white" />
-            </div>
+            <img
+              src="/caresync-logo-icon.png"
+              alt="CareSync Logo"
+              className="h-10 w-10 rounded-xl object-contain shadow-md shadow-indigo-100 border border-slate-100 group-hover:scale-105 transition-transform"
+            />
             <div>
-              <span className="text-lg font-extrabold tracking-tight text-slate-900">
+              <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight block">
                 Care<span className="text-indigo-600">Sync</span>
               </span>
               <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
@@ -306,12 +307,14 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-800 pb-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
-                <Heart className="h-5 w-5 fill-white" />
-              </div>
+              <img
+                src="/caresync-logo-icon.png"
+                alt="CareSync Logo"
+                className="h-10 w-10 rounded-xl object-contain bg-white/10 p-1 border border-slate-700/60"
+              />
               <div>
                 <span className="text-lg font-extrabold text-white">CareSync</span>
-                <p className="text-xs text-slate-400">Web Healthcare Platform</p>
+                <p className="text-xs text-slate-400">Your Care. In Sync. On Time.</p>
               </div>
             </div>
 
