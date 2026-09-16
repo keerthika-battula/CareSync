@@ -135,7 +135,8 @@ class AuthenticationSecurityHardeningIntegrationTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("User account is deactivated. Please register again or contact support."));
     }
 
     @Test

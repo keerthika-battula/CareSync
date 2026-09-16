@@ -60,7 +60,7 @@ class RoleAndAuthenticationTest {
                 .isActive(false)
                 .build();
         assertFalse(disabledUser.isEnabled());
-        assertFalse(disabledUser.isAccountNonLocked());
+        assertTrue(disabledUser.isAccountNonLocked());
     }
 
     @Test
