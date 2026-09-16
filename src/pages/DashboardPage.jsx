@@ -136,9 +136,6 @@ export default function DashboardPage() {
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-blue-600 p-6 sm:p-8 text-white shadow-xl shadow-indigo-100">
         <div className="relative z-10 max-w-2xl space-y-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-0.5 text-xs font-semibold tracking-wide backdrop-blur-sm">
-            <span>✨ CareSync Web Portal</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             {getGreeting()}, {user?.firstName || 'Valued Member'}!
           </h1>
