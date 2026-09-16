@@ -529,12 +529,6 @@ export default function MedicinesPage() {
                     ? 'All your scheduled medications for today will appear here once configured in the inventory.'
                     : `There are currently no doses matching the ${doseTab.toLowerCase()} filter.`}
                 </p>
-                {doseTab === 'ALL' && (
-                  <Button onClick={openAddModal} className="mt-2">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add First Medicine
-                  </Button>
-                )}
               </CardContent>
             </Card>
           ) : (

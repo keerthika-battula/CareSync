@@ -231,12 +231,6 @@ export default function AppointmentsPage() {
                   : 'Schedule your next doctor appointment or consultation.'}
               </p>
             </div>
-            {!(searchQuery || filterMember !== 'ALL' || filterPeriod !== 'ALL') && (
-              <Button onClick={openAddModal}>
-                <Plus className="w-4 h-4 mr-2" />
-                Schedule First Visit
-              </Button>
-            )}
           </CardContent>
         </Card>
       ) : (

@@ -268,12 +268,6 @@ export default function DocumentsPage() {
                   : 'Upload your medical reports, test results, or doctor prescriptions.'}
               </p>
             </div>
-            {!(searchQuery || filterType !== 'ALL' || filterMember !== 'ALL') && (
-              <Button onClick={openUploadModal}>
-                <Upload className="w-4 h-4 mr-2" />
-                Upload First Document
-              </Button>
-            )}
           </CardContent>
         </Card>
       ) : (
