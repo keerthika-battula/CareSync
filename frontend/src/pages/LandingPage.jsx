@@ -83,16 +83,11 @@ export default function LandingPage() {
                 CareSync is a secure, cloud-enabled web platform designed to streamline prescription management, daily dose adherence, doctor appointments, and family healthcare tracking from any modern browser.
               </p>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-                <Link to="/register" className="w-full sm:w-auto">
+              <div className="pt-2">
+                <Link to="/register" className="inline-block w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto text-base font-bold shadow-lg shadow-indigo-100">
                     Start Managing Health Free
                     <ArrowRight className="h-4 w-4 ml-1.5" />
-                  </Button>
-                </Link>
-                <Link to="/login" className="w-full sm:w-auto">
-                  <Button variant="secondary" size="lg" className="w-full sm:w-auto text-base">
-                    Sign In to Your Account
                   </Button>
                 </Link>
               </div>
@@ -274,32 +269,17 @@ export default function LandingPage() {
       <section className="bg-slate-50 py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-indigo-50/30 to-slate-50 p-8 lg:p-12 shadow-sm">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
-              <div className="lg:col-span-2 space-y-4">
-                <div className="inline-flex items-center gap-2 rounded-lg bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-800">
-                  <Shield className="h-3.5 w-3.5" />
-                  Enterprise Data Architecture
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                  Engineered with High-Security Healthcare Standards
-                </h3>
-                <p className="text-sm text-slate-600 leading-relaxed">
-                  CareSync separates user roles with granular RBAC permissions. All clinical records, dosages, and patient details are protected through BCrypt password hashing, stateless JWT session tokens, and strict tenant-level database isolation.
-                </p>
+            <div className="max-w-3xl space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-lg bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-800">
+                <Shield className="h-3.5 w-3.5" />
+                Enterprise Data Architecture
               </div>
-              <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
-                <Link to="/register" className="w-full">
-                  <Button size="lg" className="w-full font-bold">
-                    Create Free Account
-                    <ArrowRight className="h-4 w-4 ml-1.5" />
-                  </Button>
-                </Link>
-                <Link to="/login" className="w-full">
-                  <Button variant="secondary" size="lg" className="w-full">
-                    Sign In to Your Account
-                  </Button>
-                </Link>
-              </div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Engineered with High-Security Healthcare Standards
+              </h3>
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+                CareSync separates user roles with granular RBAC permissions. All clinical records, dosages, and patient details are protected through BCrypt password hashing, stateless JWT session tokens, and strict tenant-level database isolation.
+              </p>
             </div>
           </div>
         </div>
@@ -308,7 +288,7 @@ export default function LandingPage() {
       {/* CTA Footer */}
       <footer className="bg-slate-900 text-white py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-800 pb-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-slate-800 pb-8">
             <div className="flex items-center gap-3">
               <img
                 src={caresyncLogoIcon}
@@ -319,15 +299,6 @@ export default function LandingPage() {
                 <span className="text-lg font-extrabold text-white">CareSync</span>
                 <p className="text-xs text-slate-400">Your Care. In Sync. On Time.</p>
               </div>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <Link to="/login" className="text-sm text-slate-300 hover:text-white transition-colors">
-                Sign In
-              </Link>
-              <Link to="/register" className="text-sm text-indigo-400 hover:text-indigo-300 font-semibold transition-colors">
-                Create Account
-              </Link>
             </div>
           </div>
 
