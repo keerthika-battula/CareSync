@@ -8,6 +8,7 @@ export function Modal({
   title,
   description,
   children,
+  footer,
   maxWidth = 'max-w-lg',
 }) {
   useEffect(() => {
@@ -29,7 +30,7 @@ export function Modal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
@@ -39,11 +40,12 @@ export function Modal({
       {/* Modal Dialog */}
       <div
         className={cn(
-          "relative w-full rounded-2xl bg-white p-6 shadow-2xl transition-all duration-200 z-10 my-8 max-h-[90vh] flex flex-col",
+          "relative w-full rounded-2xl bg-white shadow-2xl transition-all duration-200 z-10 max-h-[90vh] flex flex-col overflow-hidden",
           maxWidth
         )}
       >
-        <div className="flex items-start justify-between pb-4 border-b border-slate-100 flex-shrink-0">
+        {/* Fixed Header */}
+        <div className="flex items-start justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-slate-100 flex-shrink-0 bg-white">
           <div>
             <h3 className="text-lg font-bold text-slate-900">{title}</h3>
             {description && (
@@ -58,9 +60,17 @@ export function Modal({
           </button>
         </div>
 
-        <div className="py-4 overflow-y-auto no-scrollbar flex-1 pr-1">
+        {/* Scrollable Content */}
+        <div className="px-5 sm:px-6 py-4 overflow-y-auto no-scrollbar flex-1">
           {children}
         </div>
+
+        {/* Fixed Footer */}
+        {footer && (
+          <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-t border-slate-100 bg-slate-50/80 flex-shrink-0 flex items-center justify-end gap-3 rounded-b-2xl">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

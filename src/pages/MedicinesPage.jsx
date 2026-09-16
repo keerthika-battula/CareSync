@@ -872,8 +872,18 @@ export default function MedicinesPage() {
         title={selectedMedicine ? "Edit Medication" : "Add New Medication"}
         description="Enter prescription details, dose schedule timings, and stock alerts."
         maxWidth="max-w-xl"
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="medicine-form" loading={submitting}>
+              {selectedMedicine ? 'Save Changes' : 'Add Medication'}
+            </Button>
+          </>
+        }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="medicine-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Medicine Name *"
@@ -1008,15 +1018,6 @@ export default function MedicinesPage() {
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           />
-
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={submitting}>
-              {selectedMedicine ? 'Save Changes' : 'Add Medication'}
-            </Button>
-          </div>
         </form>
       </Modal>
 
