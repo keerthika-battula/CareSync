@@ -58,6 +58,9 @@ caresync:
     bucket-name: caresync-docs
   firebase:
     credentials-path: ${FIREBASE_CREDENTIALS:classpath:firebase-service-account.json}
+  health-check:
+    ping-url: ${HEALTH_CHECK_URL:https://caresync-4dfr.onrender.com/health}
+    ping-enabled: ${HEALTH_CHECK_PING_ENABLED:true}
 
 management:
   endpoints:

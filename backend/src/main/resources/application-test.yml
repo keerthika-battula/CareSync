@@ -43,3 +43,5 @@ caresync:
     access-key: test-access-key
     secret-key: test-secret-key
     bucket-name: caresync-docs-test
+  health-check:
+    ping-enabled: false
