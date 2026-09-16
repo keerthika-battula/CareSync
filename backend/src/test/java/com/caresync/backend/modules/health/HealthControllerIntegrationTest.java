@@ -29,4 +29,24 @@ class HealthControllerIntegrationTest {
                 .andExpect(jsonPath("$.service").value("CareSync API"))
                 .andExpect(jsonPath("$.timestamp").exists());
     }
+
+    @Test
+    @DisplayName("GET /health alias is accessible without auth and returns UP")
+    void testHealthAliasEndpointReturnsUp() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.service").value("CareSync API"))
+                .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    @DisplayName("GET /api/health alias is accessible without auth and returns UP")
+    void testApiHealthAliasEndpointReturnsUp() throws Exception {
+        mockMvc.perform(get("/api/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.service").value("CareSync API"))
+                .andExpect(jsonPath("$.timestamp").exists());
+    }
 }

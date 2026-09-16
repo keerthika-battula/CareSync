@@ -1,0 +1,49 @@
+name: CareSync Health Check
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Check Backend Health
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check backend health status
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL || vars.BACKEND_URL || 'https://caresync-4dfr.onrender.com' }}
+        run: |
+          # Resolve target health endpoint URL
+          BASE_URL="${BACKEND_URL%/}"
+          if [[ "$BASE_URL" == *"/health"* ]] || [[ "$BASE_URL" == *"/actuator"* ]]; then
+            TARGET_URL="$BASE_URL"
+          else
+            TARGET_URL="$BASE_URL/api/v1/health"
+          fi
+
+          echo "Pinging CareSync backend health endpoint: $TARGET_URL"
+
+          # Perform HTTP GET request with timeout and capture response
+          HTTP_RESPONSE=$(curl --silent --show-error --write-out "\nHTTP_STATUS:%{http_code}\nTIME_TOTAL:%{time_total}s" \
+            --max-time 30 \
+            --header "Accept: application/json" \
+            "$TARGET_URL")
+
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed -e '/HTTP_STATUS:/,$d')
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\r' | sed -n -e 's/^HTTP_STATUS://p')
+          TIME_TOTAL=$(echo "$HTTP_RESPONSE" | tr -d '\r' | sed -n -e 's/^TIME_TOTAL://p')
+
+          echo "=========================================="
+          echo "HTTP Status Code: $HTTP_STATUS"
+          echo "Response Time:    $TIME_TOTAL"
+          echo "Response Body:    $HTTP_BODY"
+          echo "=========================================="
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "::error::Health check failed! Expected HTTP 200 but received status: $HTTP_STATUS"
+            exit 1
+          fi
+
+          echo "Backend is UP and healthy."

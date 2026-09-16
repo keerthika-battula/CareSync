@@ -11,11 +11,10 @@ import java.time.Instant;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/health")
 @Tag(name = "Health Check", description = "Public lightweight health check endpoint for cold start detection and uptime monitoring")
 public class HealthController {
 
-    @GetMapping
+    @GetMapping({"/api/v1/health", "/health", "/api/health"})
     @Operation(summary = "Check API health and status")
     public ResponseEntity<Map<String, Object>> checkHealth() {
         return ResponseEntity.ok(Map.of(

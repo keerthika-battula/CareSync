@@ -134,13 +134,47 @@ CareSync/
 
 ## API Documentation
 
-CareSync exposes a RESTful API with automated OpenAPI 3 documentation:
+CareSync exposes a RESTful API with automated OpenAPI 3 documentation and public health monitoring:
 
 - **Swagger UI**: [`http://localhost:8080/swagger-ui.html`](http://localhost:8080/swagger-ui.html)
 - **OpenAPI JSON**: [`http://localhost:8080/v3/api-docs`](http://localhost:8080/v3/api-docs)
-- **Health Actuator**: [`http://localhost:8080/actuator/health`](http://localhost:8080/actuator/health)
+- **Lightweight Health Endpoint**: [`http://localhost:8080/api/v1/health`](http://localhost:8080/api/v1/health) (Aliases: `/health`, `/api/health`)
+- **Spring Boot Actuator Health**: [`http://localhost:8080/actuator/health`](http://localhost:8080/actuator/health)
 
 All protected endpoints require an `Authorization: Bearer <token>` header obtained via `/api/auth/login` or `/api/auth/register`. Administrative operations under `/api/v1/admin/**` additionally require the `ADMIN` role.
+
+---
+
+## Scheduled Health Check & Uptime Monitoring
+
+CareSync includes an automated GitHub Actions cron workflow (`.github/workflows/health-check.yml`) that monitors the availability of the deployed Spring Boot backend every 10 minutes without perturbing business logic or creating database records.
+
+### How It Works
+- **Cron Schedule**: Executes automatically every 10 minutes (`cron: "*/10 * * * *"`) and supports manual trigger (`workflow_dispatch`).
+- **Cold-Start & Keep-Alive**: Periodically pings the lightweight `/api/v1/health` endpoint with a 30-second timeout to monitor availability and keep free-tier cloud instances warm.
+- **Detailed Logging**: Prints the HTTP status code, latency duration, and response payload in the workflow execution logs.
+- **Fail-Safe**: Fails the workflow step and highlights an alert if the server responds with an error status or fails to connect.
+
+### Configuration (GitHub Secrets / Variables)
+To configure or change the target backend URL in your repository:
+1. Navigate to **Settings** > **Secrets and variables** > **Actions** in your GitHub repository.
+2. Under **Repository Secrets** or **Repository Variables**, add:
+   - **Name**: `BACKEND_URL`
+   - **Value**: `https://caresync-4dfr.onrender.com` (or your custom backend domain)
+3. If `BACKEND_URL` is omitted, the workflow automatically defaults to the production backend endpoint.
+
+### Manual Verification via cURL
+```bash
+curl -i https://caresync-4dfr.onrender.com/api/v1/health
+```
+Response:
+```json
+{
+  "status": "UP",
+  "service": "CareSync API",
+  "timestamp": "2026-09-16T03:08:04Z"
+}
+```
 
 ---
 
