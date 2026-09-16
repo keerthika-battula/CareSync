@@ -25,30 +25,19 @@ import java.time.Duration;
 /**
  * Lightweight Quartz Job that runs every 5 minutes to verify backend health,
  * keep active database connection pools warm, monitor JVM resource usage, and
- * send an HTTP GET request to the deployed public Render health endpoint.
+ * send an HTTP GET request to an external endpoint configured via environment variables.
  *
  * =========================================================================================
- * ARCHITECTURE & RENDER FREE-TIER LIFECYCLE NOTE:
+ * ARCHITECTURE & ENVIRONMENT VARIABLE NOTE:
  * =========================================================================================
- * 1. HOW THE HTTP GET REQUEST INTERACTS WITH RENDER:
- *    - When the Spring Boot container is RUNNING / AWAKE, this job executes every 5 minutes.
- *    - It sends an outbound HTTP GET request to the deployed Render URL (e.g.
- *      https://caresync-4dfr.onrender.com/health).
- *    - This request exits the container, routes through Cloudflare / Render's public edge
- *      load balancer, and arrives back as an INBOUND HTTP request to the service.
- *    - Render's edge router recognizes this inbound HTTP traffic and resets the 15-minute
- *      idle inactivity timer back to zero, maintaining active container status.
+ * The target URL is read dynamically from the EXTERNAL_PING_URL environment variable
+ * configured in Render (or application properties).
  *
- * 2. CRITICAL LIMITATION (WHEN THE CONTAINER IS ASLEEP):
- *    - If Render puts the free-tier service to sleep (e.g., during initial deployment,
- *      platform restarts, or zero activity exceeding 15 minutes before the first trigger),
- *      the entire JVM and its internal threads (including Quartz) are SUSPENDED.
- *    - An internal Quartz job CANNOT wake up a sleeping container from the inside because
- *      its scheduler process is paused along with the JVM.
- *    - Container wake-up requires an external inbound request (such as a user accessing
- *      the CareSync frontend / API, or an external uptime service).
- *    - Once awakened, this Quartz job resumes executing every 5 minutes and keeps
- *      Render awake for subsequent cycles.
+ * If EXTERNAL_PING_URL is not set, a warning is logged and the job safely continues
+ * its internal database and JVM health checks without crashing the application.
+ *
+ * All HTTP requests include strict connection timeouts (8s) and request timeouts (10s),
+ * logging the target host, response status code, and latency for full observability.
  * =========================================================================================
  */
 @Component
@@ -59,8 +48,8 @@ public class BackendHealthCheckJob implements Job {
     @Autowired(required = false)
     private DataSource dataSource;
 
-    @Value("${caresync.health-check.ping-url:https://caresync-4dfr.onrender.com/health}")
-    private String healthCheckUrl;
+    @Value("${EXTERNAL_PING_URL:${caresync.health-check.external-ping-url:}}")
+    private String externalPingUrl;
 
     @Value("${caresync.health-check.ping-enabled:true}")
     private boolean pingEnabled;
@@ -93,38 +82,51 @@ public class BackendHealthCheckJob implements Job {
             dbHealthy = true;
         }
 
-        // 2. Perform Outbound HTTP GET Ping to Public Deployed Health Endpoint
+        // 2. Perform Outbound HTTP GET Ping to External Endpoint (Read from EXTERNAL_PING_URL)
         boolean httpPingSuccess = false;
         int httpStatusCode = 0;
         long httpDurationMs = 0;
+        String targetHost = "N/A";
 
-        if (pingEnabled && healthCheckUrl != null && !healthCheckUrl.isBlank()) {
-            long httpStart = System.currentTimeMillis();
-            try {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(healthCheckUrl))
-                        .header("User-Agent", "CareSync-InternalQuartz/1.0")
-                        .header("Accept", "application/json, text/plain, */*")
-                        .timeout(Duration.ofSeconds(10))
-                        .GET()
-                        .build();
-
-                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                httpStatusCode = response.statusCode();
-                httpDurationMs = System.currentTimeMillis() - httpStart;
-
-                if (httpStatusCode >= 200 && httpStatusCode < 400) {
-                    httpPingSuccess = true;
-                    log.info("[CareSync Health Job] Deployed health endpoint ping SUCCESS -> {} (Status: {}, Duration: {}ms)",
-                            healthCheckUrl, httpStatusCode, httpDurationMs);
-                } else {
-                    log.warn("[CareSync Health Job] Deployed health endpoint returned non-2xx status -> {} (Status: {})",
-                            healthCheckUrl, httpStatusCode);
+        if (pingEnabled) {
+            if (externalPingUrl != null && !externalPingUrl.trim().isEmpty()) {
+                String trimmedUrl = externalPingUrl.trim();
+                try {
+                    URI uri = URI.create(trimmedUrl);
+                    targetHost = uri.getHost() != null ? uri.getHost() : trimmedUrl;
+                } catch (Exception e) {
+                    targetHost = trimmedUrl;
                 }
-            } catch (Exception e) {
-                httpDurationMs = System.currentTimeMillis() - httpStart;
-                log.warn("[CareSync Health Job] HTTP ping to {} failed or timed out ({}ms): {}",
-                        healthCheckUrl, httpDurationMs, e.getMessage());
+
+                long httpStart = System.currentTimeMillis();
+                try {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(trimmedUrl))
+                            .header("User-Agent", "CareSync-ExternalPing/1.0")
+                            .header("Accept", "application/json, text/plain, */*")
+                            .timeout(Duration.ofSeconds(10))
+                            .GET()
+                            .build();
+
+                    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                    httpStatusCode = response.statusCode();
+                    httpDurationMs = System.currentTimeMillis() - httpStart;
+
+                    if (httpStatusCode >= 200 && httpStatusCode < 400) {
+                        httpPingSuccess = true;
+                        log.info("[CareSync Health Job] External ping SUCCESS -> Host: [{}], URL: [{}], Status: [{}], Duration: [{}ms]",
+                                targetHost, trimmedUrl, httpStatusCode, httpDurationMs);
+                    } else {
+                        log.warn("[CareSync Health Job] External ping returned non-2xx -> Host: [{}], URL: [{}], Status: [{}], Duration: [{}ms]",
+                                targetHost, trimmedUrl, httpStatusCode, httpDurationMs);
+                    }
+                } catch (Exception e) {
+                    httpDurationMs = System.currentTimeMillis() - httpStart;
+                    log.error("[CareSync Health Job] External ping FAILED -> Host: [{}], URL: [{}], Error: [{}], Duration: [{}ms]",
+                            targetHost, trimmedUrl, e.getMessage(), httpDurationMs);
+                }
+            } else {
+                log.warn("[CareSync Health Job] EXTERNAL_PING_URL environment variable is not configured or empty. External ping skipped.");
             }
         }
 
@@ -140,10 +142,11 @@ public class BackendHealthCheckJob implements Job {
 
         long durationMs = System.currentTimeMillis() - startTime;
 
-        log.info("[CareSync Health Job] Health check cycle complete (total: {}ms) | DB: {} | HTTP Ping: {} (Status: {}) | Heap: {}MB/{}MB | Active Threads: {} | Uptime: {}s",
+        log.info("[CareSync Health Job] Health check cycle complete (total: {}ms) | DB: {} | External Ping: {} (Host: {}, Status: {}) | Heap: {}MB/{}MB | Active Threads: {} | Uptime: {}s",
                 durationMs,
                 dbHealthy ? "UP" : "DOWN (" + dbError + ")",
-                httpPingSuccess ? "UP" : (pingEnabled ? "FAILED/TIMEOUT" : "SKIPPED"),
+                httpPingSuccess ? "UP" : (pingEnabled && externalPingUrl != null && !externalPingUrl.isBlank() ? "FAILED" : "SKIPPED/UNSET"),
+                targetHost,
                 httpStatusCode,
                 usedMemoryMb,
                 maxMemoryMb,
