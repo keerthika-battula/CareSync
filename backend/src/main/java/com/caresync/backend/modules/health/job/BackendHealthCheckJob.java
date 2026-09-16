@@ -36,8 +36,9 @@ import java.time.Duration;
  * If EXTERNAL_PING_URL is not set, a warning is logged and the job safely continues
  * its internal database and JVM health checks without crashing the application.
  *
- * All HTTP requests include strict connection timeouts (8s) and request timeouts (10s),
- * logging the target host, response status code, and latency for full observability.
+ * Security & Observability:
+ * All logs sanitize the target URL, stripping sensitive query tokens and parameters,
+ * logging strictly the target Host, Path, HTTP Status Code, and Latency (ms).
  * =========================================================================================
  */
 @Component
@@ -51,7 +52,7 @@ public class BackendHealthCheckJob implements Job {
     @Value("${EXTERNAL_PING_URL:${caresync.health-check.external-ping-url:}}")
     private String externalPingUrl;
 
-    @Value("${caresync.health-check.ping-enabled:true}")
+    @Value("${EXTERNAL_PING_ENABLED:${caresync.health-check.ping-enabled:true}}")
     private boolean pingEnabled;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -87,15 +88,18 @@ public class BackendHealthCheckJob implements Job {
         int httpStatusCode = 0;
         long httpDurationMs = 0;
         String targetHost = "N/A";
+        String targetPath = "/";
 
         if (pingEnabled) {
             if (externalPingUrl != null && !externalPingUrl.trim().isEmpty()) {
                 String trimmedUrl = externalPingUrl.trim();
                 try {
                     URI uri = URI.create(trimmedUrl);
-                    targetHost = uri.getHost() != null ? uri.getHost() : trimmedUrl;
+                    targetHost = uri.getHost() != null ? uri.getHost() : "N/A";
+                    targetPath = (uri.getPath() != null && !uri.getPath().isEmpty()) ? uri.getPath() : "/";
                 } catch (Exception e) {
-                    targetHost = trimmedUrl;
+                    targetHost = "invalid-url";
+                    targetPath = "/";
                 }
 
                 long httpStart = System.currentTimeMillis();
@@ -114,16 +118,16 @@ public class BackendHealthCheckJob implements Job {
 
                     if (httpStatusCode >= 200 && httpStatusCode < 400) {
                         httpPingSuccess = true;
-                        log.info("[CareSync Health Job] External ping SUCCESS -> Host: [{}], URL: [{}], Status: [{}], Duration: [{}ms]",
-                                targetHost, trimmedUrl, httpStatusCode, httpDurationMs);
+                        log.info("[CareSync Health Job] External ping SUCCESS -> Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]",
+                                targetHost, targetPath, httpStatusCode, httpDurationMs);
                     } else {
-                        log.warn("[CareSync Health Job] External ping returned non-2xx -> Host: [{}], URL: [{}], Status: [{}], Duration: [{}ms]",
-                                targetHost, trimmedUrl, httpStatusCode, httpDurationMs);
+                        log.warn("[CareSync Health Job] External ping returned non-2xx -> Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]",
+                                targetHost, targetPath, httpStatusCode, httpDurationMs);
                     }
                 } catch (Exception e) {
                     httpDurationMs = System.currentTimeMillis() - httpStart;
-                    log.error("[CareSync Health Job] External ping FAILED -> Host: [{}], URL: [{}], Error: [{}], Duration: [{}ms]",
-                            targetHost, trimmedUrl, e.getMessage(), httpDurationMs);
+                    log.error("[CareSync Health Job] External ping FAILED -> Host: [{}], Path: [{}], Error: [{}], Latency: [{}ms]",
+                            targetHost, targetPath, e.getMessage(), httpDurationMs);
                 }
             } else {
                 log.warn("[CareSync Health Job] EXTERNAL_PING_URL environment variable is not configured or empty. External ping skipped.");
@@ -142,12 +146,14 @@ public class BackendHealthCheckJob implements Job {
 
         long durationMs = System.currentTimeMillis() - startTime;
 
-        log.info("[CareSync Health Job] Health check cycle complete (total: {}ms) | DB: {} | External Ping: {} (Host: {}, Status: {}) | Heap: {}MB/{}MB | Active Threads: {} | Uptime: {}s",
+        log.info("[CareSync Health Job] Health check cycle complete (total: {}ms) | DB: {} | External Ping: {} (Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]) | Heap: {}MB/{}MB | Active Threads: {} | Uptime: {}s",
                 durationMs,
                 dbHealthy ? "UP" : "DOWN (" + dbError + ")",
                 httpPingSuccess ? "UP" : (pingEnabled && externalPingUrl != null && !externalPingUrl.isBlank() ? "FAILED" : "SKIPPED/UNSET"),
                 targetHost,
+                targetPath,
                 httpStatusCode,
+                httpDurationMs,
                 usedMemoryMb,
                 maxMemoryMb,
                 activeThreads,
