@@ -7,6 +7,7 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.quartz.SchedulerFactoryBeanCustomizer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +18,8 @@ import org.springframework.context.annotation.Configuration;
  * Reuses Spring Boot's primary Scheduler bean and configures custom Spring Bean Job Factory
  * for autowired dependency injection in Quartz Job instances.
  *
- * Configures the periodic 10-minute system health self-check job and trigger.
+ * Configures the periodic 5-minute system health self-check job and trigger with
+ * overwriteExistingJobs enabled to synchronize database triggers with code updates.
  */
 @Configuration
 public class QuartzConfig {
@@ -33,6 +35,14 @@ public class QuartzConfig {
         AutowiringSpringBeanJobFactory factory = new AutowiringSpringBeanJobFactory();
         factory.setApplicationContext(applicationContext);
         return factory;
+    }
+
+    @Bean
+    public SchedulerFactoryBeanCustomizer schedulerFactoryBeanCustomizer() {
+        return schedulerFactoryBean -> {
+            schedulerFactoryBean.setJobFactory(springBeanJobFactory());
+            schedulerFactoryBean.setOverwriteExistingJobs(true);
+        };
     }
 
     @Bean(name = "backendHealthCheckJobDetail")

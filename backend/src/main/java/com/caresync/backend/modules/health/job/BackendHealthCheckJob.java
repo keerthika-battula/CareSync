@@ -1,5 +1,6 @@
 package com.caresync.backend.modules.health.job;
 
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.Job;
@@ -28,17 +29,11 @@ import java.time.Duration;
  * send an HTTP GET request to an external endpoint configured via environment variables.
  *
  * =========================================================================================
- * ARCHITECTURE & ENVIRONMENT VARIABLE NOTE:
+ * ARCHITECTURE & ENVIRONMENT VARIABLE BINDING:
  * =========================================================================================
- * The target URL is read dynamically from the EXTERNAL_PING_URL environment variable
- * configured in Render (or application properties).
- *
- * If EXTERNAL_PING_URL is not set, a warning is logged and the job safely continues
- * its internal database and JVM health checks without crashing the application.
- *
- * Security & Observability:
- * All logs sanitize the target URL, stripping sensitive query tokens and parameters,
- * logging strictly the target Host, Path, HTTP Status Code, and Latency (ms).
+ * - Reads EXTERNAL_PING_URL from the Render environment (or system property).
+ * - Reads EXTERNAL_PING_ENABLED (defaults to true in production; false in test profile).
+ * - All log statements sanitize URLs to prevent query token/credential leaks.
  * =========================================================================================
  */
 @Component
@@ -58,6 +53,66 @@ public class BackendHealthCheckJob implements Job {
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(8))
             .build();
+
+    @PostConstruct
+    public void init() {
+        String resolvedUrl = resolveTargetUrl();
+        boolean resolvedEnabled = resolvePingEnabled();
+        String host = extractHost(resolvedUrl);
+        String path = extractPath(resolvedUrl);
+
+        if (resolvedEnabled && resolvedUrl != null && !resolvedUrl.isBlank()) {
+            log.info("[CareSync Health Job Config] Initialized. Ping Enabled: true | Target Host: [{}] | Path: [{}] | Interval: 5 minutes",
+                    host, path);
+        } else if (!resolvedEnabled) {
+            log.info("[CareSync Health Job Config] Initialized. Ping Enabled: false (Pings disabled for this profile/environment)");
+        } else {
+            log.warn("[CareSync Health Job Config] Initialized. Ping Enabled: true | Target URL: [UNCONFIGURED] -> Add EXTERNAL_PING_URL in Render Dashboard to enable external keep-alive pings");
+        }
+    }
+
+    private String resolveTargetUrl() {
+        if (externalPingUrl != null && !externalPingUrl.trim().isEmpty()) {
+            return externalPingUrl.trim();
+        }
+        String sysEnv = System.getenv("EXTERNAL_PING_URL");
+        if (sysEnv != null && !sysEnv.trim().isEmpty()) {
+            return sysEnv.trim();
+        }
+        String sysEnvLower = System.getenv("external_ping_url");
+        if (sysEnvLower != null && !sysEnvLower.trim().isEmpty()) {
+            return sysEnvLower.trim();
+        }
+        return null;
+    }
+
+    private boolean resolvePingEnabled() {
+        String envEnabled = System.getenv("EXTERNAL_PING_ENABLED");
+        if (envEnabled != null && !envEnabled.trim().isEmpty()) {
+            return Boolean.parseBoolean(envEnabled.trim());
+        }
+        return pingEnabled;
+    }
+
+    private String extractHost(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) return "N/A";
+        try {
+            URI uri = URI.create(rawUrl.trim());
+            return uri.getHost() != null ? uri.getHost() : "N/A";
+        } catch (Exception e) {
+            return "invalid-url";
+        }
+    }
+
+    private String extractPath(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) return "/";
+        try {
+            URI uri = URI.create(rawUrl.trim());
+            return (uri.getPath() != null && !uri.getPath().isEmpty()) ? uri.getPath() : "/";
+        } catch (Exception e) {
+            return "/";
+        }
+    }
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
@@ -84,28 +139,20 @@ public class BackendHealthCheckJob implements Job {
         }
 
         // 2. Perform Outbound HTTP GET Ping to External Endpoint (Read from EXTERNAL_PING_URL)
+        boolean isEnabled = resolvePingEnabled();
+        String targetUrl = resolveTargetUrl();
         boolean httpPingSuccess = false;
         int httpStatusCode = 0;
         long httpDurationMs = 0;
-        String targetHost = "N/A";
-        String targetPath = "/";
+        String targetHost = extractHost(targetUrl);
+        String targetPath = extractPath(targetUrl);
 
-        if (pingEnabled) {
-            if (externalPingUrl != null && !externalPingUrl.trim().isEmpty()) {
-                String trimmedUrl = externalPingUrl.trim();
-                try {
-                    URI uri = URI.create(trimmedUrl);
-                    targetHost = uri.getHost() != null ? uri.getHost() : "N/A";
-                    targetPath = (uri.getPath() != null && !uri.getPath().isEmpty()) ? uri.getPath() : "/";
-                } catch (Exception e) {
-                    targetHost = "invalid-url";
-                    targetPath = "/";
-                }
-
+        if (isEnabled) {
+            if (targetUrl != null && !targetUrl.isBlank()) {
                 long httpStart = System.currentTimeMillis();
                 try {
                     HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(trimmedUrl))
+                            .uri(URI.create(targetUrl))
                             .header("User-Agent", "CareSync-ExternalPing/1.0")
                             .header("Accept", "application/json, text/plain, */*")
                             .timeout(Duration.ofSeconds(10))
@@ -130,7 +177,7 @@ public class BackendHealthCheckJob implements Job {
                             targetHost, targetPath, e.getMessage(), httpDurationMs);
                 }
             } else {
-                log.warn("[CareSync Health Job] EXTERNAL_PING_URL environment variable is not configured or empty. External ping skipped.");
+                log.warn("[CareSync Health Job] EXTERNAL_PING_URL environment variable is not configured or empty. External ping skipped. (Set EXTERNAL_PING_URL in Render Dashboard -> Environment to enable)");
             }
         }
 
@@ -149,7 +196,7 @@ public class BackendHealthCheckJob implements Job {
         log.info("[CareSync Health Job] Health check cycle complete (total: {}ms) | DB: {} | External Ping: {} (Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]) | Heap: {}MB/{}MB | Active Threads: {} | Uptime: {}s",
                 durationMs,
                 dbHealthy ? "UP" : "DOWN (" + dbError + ")",
-                httpPingSuccess ? "UP" : (pingEnabled && externalPingUrl != null && !externalPingUrl.isBlank() ? "FAILED" : "SKIPPED/UNSET"),
+                httpPingSuccess ? "UP" : (isEnabled && targetUrl != null && !targetUrl.isBlank() ? "FAILED" : "SKIPPED/UNSET"),
                 targetHost,
                 targetPath,
                 httpStatusCode,

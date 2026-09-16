@@ -20,6 +20,7 @@ spring:
 
   quartz:
     job-store-type: jdbc
+    overwrite-existing-jobs: true
     jdbc:
       initialize-schema: never
     properties:
