@@ -31,22 +31,24 @@ export function Navbar({ onMenuToggle }) {
           <Menu className="h-5 w-5" />
         </button>
 
+        {/* Brand in Navbar on Mobile (when Sidebar is collapsed) */}
         <div
-          className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group"
+          className="flex items-center gap-2.5 cursor-pointer select-none group lg:hidden"
           onClick={() => navigate('/dashboard')}
         >
           <img
             src="/caresync-logo-icon.png"
             alt="CareSync Logo"
-            className="h-9 sm:h-10 w-auto object-contain flex-shrink-0 group-hover:scale-105 transition-transform"
+            className="h-8 w-auto object-contain flex-shrink-0 group-hover:scale-105 transition-transform"
           />
-          <span className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 leading-none">
+          <span className="text-base font-extrabold tracking-tight text-slate-900 leading-none">
             Care<span className="text-indigo-600">Sync</span>
           </span>
         </div>
 
+        {/* Desktop Date Badge */}
         {currentDate && (
-          <div className="hidden xl:flex items-center gap-2 ml-4 pl-4 border-l border-slate-200/80">
+          <div className="hidden lg:flex items-center gap-2 text-slate-600">
             <span className="text-xs font-semibold text-slate-400">Today:</span>
             <span className="text-xs font-bold text-slate-700">{currentDate}</span>
           </div>
