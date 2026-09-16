@@ -23,7 +23,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 
 /**
- * Lightweight Quartz Job that runs every 10 minutes to verify backend health,
+ * Lightweight Quartz Job that runs every 5 minutes to verify backend health,
  * keep active database connection pools warm, monitor JVM resource usage, and
  * send an HTTP GET request to the deployed public Render health endpoint.
  *
@@ -31,7 +31,7 @@ import java.time.Duration;
  * ARCHITECTURE & RENDER FREE-TIER LIFECYCLE NOTE:
  * =========================================================================================
  * 1. HOW THE HTTP GET REQUEST INTERACTS WITH RENDER:
- *    - When the Spring Boot container is RUNNING / AWAKE, this job executes every 10 minutes.
+ *    - When the Spring Boot container is RUNNING / AWAKE, this job executes every 5 minutes.
  *    - It sends an outbound HTTP GET request to the deployed Render URL (e.g.
  *      https://caresync-4dfr.onrender.com/health).
  *    - This request exits the container, routes through Cloudflare / Render's public edge
@@ -47,7 +47,7 @@ import java.time.Duration;
  *      its scheduler process is paused along with the JVM.
  *    - Container wake-up requires an external inbound request (such as a user accessing
  *      the CareSync frontend / API, or an external uptime service).
- *    - Once awakened, this Quartz job resumes executing every 10 minutes and keeps
+ *    - Once awakened, this Quartz job resumes executing every 5 minutes and keeps
  *      Render awake for subsequent cycles.
  * =========================================================================================
  */
@@ -72,7 +72,7 @@ public class BackendHealthCheckJob implements Job {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         long startTime = System.currentTimeMillis();
-        log.info("[CareSync Health Job] Starting 10-minute scheduled backend health self-check...");
+        log.info("[CareSync Health Job] Starting 5-minute scheduled backend health self-check...");
 
         boolean dbHealthy = false;
         String dbError = null;

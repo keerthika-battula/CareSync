@@ -39,7 +39,7 @@ public class QuartzConfig {
     public JobDetail backendHealthCheckJobDetail() {
         return JobBuilder.newJob(BackendHealthCheckJob.class)
                 .withIdentity("backendHealthCheckJob", "system-maintenance")
-                .withDescription("Periodic 10-minute CareSync backend self-health check")
+                .withDescription("Periodic 5-minute CareSync backend self-health check and public HTTP probe")
                 .storeDurably()
                 .build();
     }
@@ -49,9 +49,9 @@ public class QuartzConfig {
         return TriggerBuilder.newTrigger()
                 .forJob(jobDetail)
                 .withIdentity("backendHealthCheckTrigger", "system-maintenance")
-                .withDescription("10-minute recurring trigger for CareSync backend health self-check")
+                .withDescription("5-minute recurring trigger for CareSync backend health probe")
                 .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                        .withIntervalInMinutes(10)
+                        .withIntervalInMinutes(5)
                         .repeatForever()
                         .withMisfireHandlingInstructionNextWithExistingCount())
                 .build();
