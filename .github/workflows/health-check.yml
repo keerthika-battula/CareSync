@@ -1,49 +1,122 @@
-name: CareSync Health Check
+name: CareSync Health Check & Keep-Alive
 
 on:
   schedule:
+    # Run every 10 minutes to keep Render free-tier instances warm
     - cron: "*/10 * * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/**'
 
 jobs:
   health-check:
-    name: Check Backend Health
+    name: Verify Backend & Frontend Health
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-      - name: Check backend health status
+      - name: Ping Services & Keep Warm
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL || vars.BACKEND_URL || 'https://caresync-4dfr.onrender.com' }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL || vars.FRONTEND_URL || 'https://caresync-web-rav8.onrender.com' }}
         run: |
-          # Resolve target health endpoint URL
-          BASE_URL="${BACKEND_URL%/}"
-          if [[ "$BASE_URL" == *"/health"* ]] || [[ "$BASE_URL" == *"/actuator"* ]]; then
-            TARGET_URL="$BASE_URL"
+          set -e
+
+          # Resolve target health endpoint URLs
+          BASE_BACKEND="${BACKEND_URL%/}"
+          if [[ "$BASE_BACKEND" == *"/health"* ]] || [[ "$BASE_BACKEND" == *"/actuator"* ]]; then
+            TARGET_BACKEND="$BASE_BACKEND"
           else
-            TARGET_URL="$BASE_URL/api/v1/health"
+            TARGET_BACKEND="$BASE_BACKEND/api/v1/health"
+          fi
+          TARGET_FRONTEND="${FRONTEND_URL%/}"
+
+          echo "=========================================="
+          echo "CareSync Live Health Check"
+          echo "Target Backend:  $TARGET_BACKEND"
+          echo "Target Frontend: $TARGET_FRONTEND"
+          echo "=========================================="
+
+          # Function to probe endpoint with retry and cold-start tolerance
+          probe_endpoint() {
+            local NAME="$1"
+            local URL="$2"
+            local MAX_ATTEMPTS=3
+            local TIMEOUT=90 # Render free-tier cold starts may take 45-60s
+
+            echo ""
+            echo "--- Checking $NAME ($URL) ---"
+
+            for attempt in $(seq 1 $MAX_ATTEMPTS); do
+              echo "Attempt $attempt of $MAX_ATTEMPTS..."
+              
+              # Capture HTTP status, total time, and response body safely
+              HTTP_RESPONSE=$(curl --silent --show-error \
+                --write-out "\nHTTP_STATUS:%{http_code}\nTIME_TOTAL:%{time_total}s" \
+                --max-time "$TIMEOUT" \
+                --header "Accept: application/json, text/html, */*" \
+                --header "User-Agent: CareSync-HealthCheck/2.0 (GitHubActions)" \
+                "$URL" || echo -e "\nHTTP_STATUS:000\nTIME_TOTAL:0.00s")
+
+              BODY=$(echo "$HTTP_RESPONSE" | sed -e '/HTTP_STATUS:/,$d')
+              STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\r' | sed -n -e 's/^HTTP_STATUS://p')
+              TIME=$(echo "$HTTP_RESPONSE" | tr -d '\r' | sed -n -e 's/^TIME_TOTAL://p')
+
+              echo "Response Code: $STATUS | Time: $TIME"
+
+              if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+                echo "✓ $NAME is UP and Healthy! ($STATUS in $TIME)"
+                echo "Body preview: $(echo "$BODY" | head -c 200)"
+                echo "STATUS_$NAME=$STATUS" >> "$GITHUB_ENV"
+                echo "TIME_$NAME=$TIME" >> "$GITHUB_ENV"
+                return 0
+              else
+                echo "⚠ Attempt $attempt failed with status $STATUS (Instance might be waking up). Waiting 8s..."
+                sleep 8
+              fi
+            done
+
+            echo "::error::$NAME failed after $MAX_ATTEMPTS attempts (Last status: $STATUS)"
+            return 1
+          }
+
+          # Probe backend and frontend
+          BACKEND_SUCCESS=0
+          FRONTEND_SUCCESS=0
+
+          probe_endpoint "Backend" "$TARGET_BACKEND" && BACKEND_SUCCESS=1 || BACKEND_SUCCESS=0
+          probe_endpoint "Frontend" "$TARGET_FRONTEND" && FRONTEND_SUCCESS=1 || FRONTEND_SUCCESS=0
+
+          # Summary report for GitHub Actions UI
+          echo "### 🏥 CareSync Service Health Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Service | Target URL | Status | Response Time | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| :--- | :--- | :--- | :--- | :--- |" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$BACKEND_SUCCESS" -eq 1 ]; then
+            echo "| **Backend API** | \`$TARGET_BACKEND\` | $STATUS_Backend | $TIME_Backend | ✅ UP |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| **Backend API** | \`$TARGET_BACKEND\` | Failed | - | ❌ DOWN |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-          echo "Pinging CareSync backend health endpoint: $TARGET_URL"
+          if [ "$FRONTEND_SUCCESS" -eq 1 ]; then
+            echo "| **Frontend PWA** | \`$TARGET_FRONTEND\` | $STATUS_Frontend | $TIME_Frontend | ✅ UP |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| **Frontend PWA** | \`$TARGET_FRONTEND\` | Failed | - | ❌ DOWN |" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
-          # Perform HTTP GET request with timeout and capture response
-          HTTP_RESPONSE=$(curl --silent --show-error --write-out "\nHTTP_STATUS:%{http_code}\nTIME_TOTAL:%{time_total}s" \
-            --max-time 30 \
-            --header "Accept: application/json" \
-            "$TARGET_URL")
-
-          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed -e '/HTTP_STATUS:/,$d')
-          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\r' | sed -n -e 's/^HTTP_STATUS://p')
-          TIME_TOTAL=$(echo "$HTTP_RESPONSE" | tr -d '\r' | sed -n -e 's/^TIME_TOTAL://p')
-
-          echo "=========================================="
-          echo "HTTP Status Code: $HTTP_STATUS"
-          echo "Response Time:    $TIME_TOTAL"
-          echo "Response Body:    $HTTP_BODY"
-          echo "=========================================="
-
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "::error::Health check failed! Expected HTTP 200 but received status: $HTTP_STATUS"
+          # Exit with failure if any required service is down
+          if [ "$BACKEND_SUCCESS" -ne 1 ]; then
+            echo "::error::Backend health check failed"
             exit 1
           fi
 
-          echo "Backend is UP and healthy."
+          if [ "$FRONTEND_SUCCESS" -ne 1 ]; then
+            echo "::warning::Frontend ping failed"
+          fi
+
+          echo ""
+          echo "All checks completed successfully."
