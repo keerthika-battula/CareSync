@@ -40,12 +40,19 @@ jobs:
           echo "Target Frontend: $TARGET_FRONTEND"
           echo "=========================================="
 
+          # Summary report header
+          echo "### 🏥 CareSync Live Service Health Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Service | Target URL | Status | Response Time | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| :--- | :--- | :--- | :--- | :--- |" >> "$GITHUB_STEP_SUMMARY"
+
           # Function to probe endpoint with retry and cold-start tolerance
           probe_endpoint() {
             local NAME="$1"
             local URL="$2"
             local MAX_ATTEMPTS=3
             local TIMEOUT=90 # Render free-tier cold starts may take 45-60s
+            local SUCCESS=0
 
             echo ""
             echo "--- Checking $NAME ($URL) ---"
@@ -53,7 +60,6 @@ jobs:
             for attempt in $(seq 1 $MAX_ATTEMPTS); do
               echo "Attempt $attempt of $MAX_ATTEMPTS..."
               
-              # Capture HTTP status, total time, and response body safely
               HTTP_RESPONSE=$(curl --silent --show-error \
                 --write-out "\nHTTP_STATUS:%{http_code}\nTIME_TOTAL:%{time_total}s" \
                 --max-time "$TIMEOUT" \
@@ -69,9 +75,7 @@ jobs:
 
               if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
                 echo "✓ $NAME is UP and Healthy! ($STATUS in $TIME)"
-                echo "Body preview: $(echo "$BODY" | head -c 200)"
-                echo "STATUS_$NAME=$STATUS" >> "$GITHUB_ENV"
-                echo "TIME_$NAME=$TIME" >> "$GITHUB_ENV"
+                echo "| **$NAME** | \`$URL\` | $STATUS | $TIME | ✅ UP |" >> "$GITHUB_STEP_SUMMARY"
                 return 0
               else
                 echo "⚠ Attempt $attempt failed with status $STATUS (Instance might be waking up). Waiting 8s..."
@@ -80,42 +84,25 @@ jobs:
             done
 
             echo "::error::$NAME failed after $MAX_ATTEMPTS attempts (Last status: $STATUS)"
+            echo "| **$NAME** | \`$URL\` | Failed ($STATUS) | - | ❌ DOWN |" >> "$GITHUB_STEP_SUMMARY"
             return 1
           }
 
           # Probe backend and frontend
-          BACKEND_SUCCESS=0
-          FRONTEND_SUCCESS=0
+          BACKEND_OK=0
+          FRONTEND_OK=0
 
-          probe_endpoint "Backend" "$TARGET_BACKEND" && BACKEND_SUCCESS=1 || BACKEND_SUCCESS=0
-          probe_endpoint "Frontend" "$TARGET_FRONTEND" && FRONTEND_SUCCESS=1 || FRONTEND_SUCCESS=0
+          probe_endpoint "Backend API" "$TARGET_BACKEND" && BACKEND_OK=1 || BACKEND_OK=0
+          probe_endpoint "Frontend PWA" "$TARGET_FRONTEND" && FRONTEND_OK=1 || FRONTEND_OK=0
 
-          # Summary report for GitHub Actions UI
-          echo "### 🏥 CareSync Service Health Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Service | Target URL | Status | Response Time | Result |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| :--- | :--- | :--- | :--- | :--- |" >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$BACKEND_SUCCESS" -eq 1 ]; then
-            echo "| **Backend API** | \`$TARGET_BACKEND\` | $STATUS_Backend | $TIME_Backend | ✅ UP |" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "| **Backend API** | \`$TARGET_BACKEND\` | Failed | - | ❌ DOWN |" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          if [ "$FRONTEND_SUCCESS" -eq 1 ]; then
-            echo "| **Frontend PWA** | \`$TARGET_FRONTEND\` | $STATUS_Frontend | $TIME_Frontend | ✅ UP |" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "| **Frontend PWA** | \`$TARGET_FRONTEND\` | Failed | - | ❌ DOWN |" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-          # Exit with failure if any required service is down
-          if [ "$BACKEND_SUCCESS" -ne 1 ]; then
-            echo "::error::Backend health check failed"
+          # Exit with failure if backend service is down
+          if [ "$BACKEND_OK" -ne 1 ]; then
+            echo "::error::Backend API health check failed"
             exit 1
           fi
 
-          if [ "$FRONTEND_SUCCESS" -ne 1 ]; then
-            echo "::warning::Frontend ping failed"
+          if [ "$FRONTEND_OK" -ne 1 ]; then
+            echo "::warning::Frontend PWA ping failed"
           fi
 
           echo ""
