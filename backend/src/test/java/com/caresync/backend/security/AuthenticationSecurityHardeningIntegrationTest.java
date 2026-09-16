@@ -350,6 +350,41 @@ class AuthenticationSecurityHardeningIntegrationTest {
     }
 
     @Test
+    @DisplayName("Registration with deactivated user's email restores and reactivates the account")
+    void testRegisterDeactivatedUser_ReactivatesAccount() throws Exception {
+        String regBody = """
+                {
+                    "firstName": "Reactivated",
+                    "lastName": "User",
+                    "email": "disabled.user@caresync.test",
+                    "password": "NewFreshPassword123!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(regBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.user.email").value("disabled.user@caresync.test"))
+                .andExpect(jsonPath("$.data.user.firstName").value("Reactivated"))
+                .andExpect(jsonPath("$.data.accessToken").isString());
+
+        // Verify that user can now login with the new credentials
+        String loginBody = """
+                {
+                    "email": "disabled.user@caresync.test",
+                    "password": "NewFreshPassword123!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
     @DisplayName("Invalid login returns security-safe generic error message")
     void testInvalidLogin_ReturnsSecuritySafeMessage() throws Exception {
         String invalidPass = """

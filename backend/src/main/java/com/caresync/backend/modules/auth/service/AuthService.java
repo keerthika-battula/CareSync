@@ -53,13 +53,46 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
-        if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new ConflictException("Email is already registered");
-        }
+        Optional<User> existingUserOpt = userRepository.findByEmailIgnoreCase(email);
 
         String username = request.getUsername() != null && !request.getUsername().trim().isEmpty()
                 ? request.getUsername().trim().toLowerCase()
                 : null;
+
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+            if (existingUser.isActive()) {
+                throw new ConflictException("Email is already registered");
+            }
+
+            // Deactivated user is re-registering: restore and reactivate account
+            if (username != null) {
+                Optional<User> userWithUsername = userRepository.findByUsernameIgnoreCase(username);
+                if (userWithUsername.isPresent() && !userWithUsername.get().getId().equals(existingUser.getId())) {
+                    throw new ConflictException("Username is already taken");
+                }
+                existingUser.setUsername(username);
+            }
+
+            existingUser.setFirstName(request.getFirstName().trim());
+            existingUser.setLastName(request.getLastName().trim());
+            existingUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            if (isDesignatedAdmin(email)) {
+                existingUser.setRole(Role.ADMIN);
+            }
+            existingUser.setActive(true);
+            existingUser.setEmailVerified(false);
+
+            try {
+                passwordResetTokenRepository.deleteAllByUser(existingUser);
+            } catch (Exception ignored) {}
+
+            User savedUser = userRepository.save(existingUser);
+            String jwtToken = jwtService.generateAccessToken(savedUser);
+            String refreshToken = jwtService.generateRefreshToken(savedUser.getEmail());
+
+            return buildAuthResponse(savedUser, jwtToken, refreshToken);
+        }
 
         if (username != null && userRepository.existsByUsernameIgnoreCase(username)) {
             throw new ConflictException("Username is already taken");

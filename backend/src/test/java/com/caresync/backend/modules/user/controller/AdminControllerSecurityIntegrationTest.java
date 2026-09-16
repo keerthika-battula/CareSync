@@ -269,4 +269,40 @@ class AdminControllerSecurityIntegrationTest {
                 .andExpect(jsonPath("$.data.content", hasSize(1)))
                 .andExpect(jsonPath("$.data.content[0].email").value(adminUser.getEmail()));
     }
+
+    @Test
+    @DisplayName("ADMIN re-creating a deactivated user restores and reactivates their account")
+    void testAdminCreateUser_ReactivatesDeactivatedUser() throws Exception {
+        // First delete / deactivate normalUser
+        mockMvc.perform(delete("/api/v1/admin/users/" + normalUser.getId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+
+        // Now admin creates user with the same email
+        String body = """
+                {
+                    "firstName": "Restored",
+                    "lastName": "Patient",
+                    "email": "patient@caresync.test",
+                    "password": "NewSecretPassword123!",
+                    "role": "USER"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/admin/users")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.email").value("patient@caresync.test"))
+                .andExpect(jsonPath("$.data.firstName").value("Restored"))
+                .andExpect(jsonPath("$.data.isActive").value(true));
+
+        // When activeOnly=true is queried, restored user is now back in active list
+        mockMvc.perform(get("/api/v1/admin/users?activeOnly=true")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content", hasSize(2)));
+    }
 }

@@ -184,7 +184,7 @@ class AdminUserServiceTest {
                 .phoneNumber("+1122334455")
                 .build();
 
-        when(userRepository.existsByEmail("new.person@example.com")).thenReturn(false);
+        when(userRepository.findByEmailIgnoreCase("new.person@example.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("plainText123")).thenReturn("$2a$10$encodedString");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User u = invocation.getArgument(0);
@@ -205,7 +205,7 @@ class AdminUserServiceTest {
     }
 
     @Test
-    @DisplayName("Admin creating user with duplicate email throws ConflictException")
+    @DisplayName("Admin creating user with duplicate active email throws ConflictException")
     void testCreateUser_DuplicateEmail() {
         AdminCreateUserRequest req = AdminCreateUserRequest.builder()
                 .firstName("New")
@@ -214,10 +214,47 @@ class AdminUserServiceTest {
                 .password("secret123")
                 .build();
 
-        when(userRepository.existsByEmail("existing@example.com")).thenReturn(true);
+        sampleUser.setActive(true);
+        when(userRepository.findByEmailIgnoreCase("existing@example.com")).thenReturn(Optional.of(sampleUser));
 
         assertThrows(ConflictException.class, () -> adminUserService.createUser(req));
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Admin creating user with deactivated email restores and reactivates account")
+    void testCreateUser_ReactivateDeactivatedUser() {
+        AdminCreateUserRequest req = AdminCreateUserRequest.builder()
+                .firstName("Restored")
+                .lastName("Person")
+                .email("deactivated@example.com")
+                .password("newSecret123")
+                .role(Role.USER)
+                .phoneNumber("+999888777")
+                .build();
+
+        User deactivatedUser = User.builder()
+                .firstName("Old")
+                .lastName("Person")
+                .email("deactivated@example.com")
+                .passwordHash("old_hash")
+                .role(Role.USER)
+                .isActive(false)
+                .build();
+        deactivatedUser.setId(UUID.randomUUID());
+
+        when(userRepository.findByEmailIgnoreCase("deactivated@example.com")).thenReturn(Optional.of(deactivatedUser));
+        when(passwordEncoder.encode("newSecret123")).thenReturn("$2a$10$newEncodedHash");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminUserResponse response = adminUserService.createUser(req);
+
+        assertNotNull(response);
+        assertTrue(response.isActive());
+        assertEquals("Restored", response.getFirstName());
+        assertEquals("Person", response.getLastName());
+        assertEquals("+999888777", response.getPhoneNumber());
+        verify(userRepository).save(deactivatedUser);
     }
 
     @Test

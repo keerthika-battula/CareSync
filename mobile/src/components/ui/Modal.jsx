@@ -58,7 +58,7 @@ export function Modal({
           </button>
         </div>
 
-        <div className="py-4 overflow-y-auto flex-1 pr-1">
+        <div className="py-4 overflow-y-auto no-scrollbar flex-1 pr-1">
           {children}
         </div>
       </div>

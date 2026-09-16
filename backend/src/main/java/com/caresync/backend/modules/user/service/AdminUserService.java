@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -87,25 +88,55 @@ public class AdminUserService {
 
     @Transactional
     public AdminUserResponse createUser(AdminCreateUserRequest request) {
-        String email = request.getEmail() != null ? request.getEmail().trim() : "";
-        if (userRepository.existsByEmail(email) || userRepository.existsByEmailIgnoreCase(email)) {
-            throw new ConflictException("Email is already registered");
-        }
+        String email = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+        Optional<User> existingUserOpt = userRepository.findByEmailIgnoreCase(email);
 
+        Role role = request.getRole() != null ? request.getRole() : Role.USER;
         String username = request.getUsername() != null && !request.getUsername().trim().isEmpty()
                 ? request.getUsername().trim().toLowerCase()
                 : null;
+
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+            if (existingUser.isActive()) {
+                throw new ConflictException("Email is already registered");
+            }
+
+            // Deactivated user is being re-created by admin: restore and reactivate
+            if (username != null) {
+                Optional<User> userWithUsername = userRepository.findByUsernameIgnoreCase(username);
+                if (userWithUsername.isPresent() && !userWithUsername.get().getId().equals(existingUser.getId())) {
+                    throw new ConflictException("Username is already taken");
+                }
+                existingUser.setUsername(username);
+            }
+
+            existingUser.setFirstName(request.getFirstName().trim());
+            existingUser.setLastName(request.getLastName().trim());
+            existingUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            if (request.getPhoneNumber() != null) {
+                existingUser.setPhoneNumber(request.getPhoneNumber().trim());
+            }
+            existingUser.setRole(role);
+            existingUser.setActive(true);
+            existingUser.setEmailVerified(false);
+
+            try {
+                passwordResetTokenRepository.deleteAllByUser(existingUser);
+            } catch (Exception ignored) {}
+
+            User saved = userRepository.save(existingUser);
+            return AdminUserResponse.fromEntity(saved);
+        }
 
         if (username != null && userRepository.existsByUsernameIgnoreCase(username)) {
             throw new ConflictException("Username is already taken");
         }
 
-        Role role = request.getRole() != null ? request.getRole() : Role.USER;
-
         User user = User.builder()
                 .firstName(request.getFirstName().trim())
                 .lastName(request.getLastName().trim())
-                .email(request.getEmail().trim().toLowerCase())
+                .email(email)
                 .username(username)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber().trim() : null)

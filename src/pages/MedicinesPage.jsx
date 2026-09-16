@@ -284,15 +284,12 @@ export default function MedicinesPage() {
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <Input
-                placeholder="Search medicines..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+            <Input
+              placeholder="Search medicines..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              icon={Search}
+            />
 
             <Select
               value={filterMember}
@@ -344,12 +341,6 @@ export default function MedicinesPage() {
                   : 'Get started by adding your first prescription or over-the-counter medicine.'}
               </p>
             </div>
-            {!(searchQuery || filterMember !== 'ALL' || filterStock !== 'ALL') && (
-              <Button onClick={openAddModal}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Medicine
-              </Button>
-            )}
           </CardContent>
         </Card>
       ) : (

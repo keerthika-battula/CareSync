@@ -176,15 +176,12 @@ export default function AppointmentsPage() {
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <Input
-                placeholder="Search by doctor or clinic..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+            <Input
+              placeholder="Search by doctor or clinic..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              icon={Search}
+            />
 
             <Select
               value={filterPeriod}

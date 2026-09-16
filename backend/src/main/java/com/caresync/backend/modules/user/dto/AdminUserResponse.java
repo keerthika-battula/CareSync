@@ -23,8 +23,13 @@ public class AdminUserResponse {
     private String fullName;
     private String phoneNumber;
     private Role role;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isActive")
     private boolean isActive;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isEmailVerified")
     private boolean isEmailVerified;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
