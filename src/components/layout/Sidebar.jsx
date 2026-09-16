@@ -55,7 +55,7 @@ export function Sidebar({ isOpen, onClose }) {
             <img
               src="/caresync-logo-icon.png"
               alt="CareSync Logo"
-              className="h-10 w-10 object-contain group-hover:scale-105 transition-transform"
+              className="h-10 w-auto object-contain flex-shrink-0 group-hover:scale-105 transition-transform"
             />
             <div>
               <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight block">
