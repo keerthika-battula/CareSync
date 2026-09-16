@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../ui/Badge';
 import { cn } from '../../utils/cn';
+import caresyncLogoIcon from '../../assets/caresync-logo-icon.png';
 
 export function Sidebar({ isOpen, onClose }) {
   const { user, isAdmin, logout } = useAuth();
@@ -53,7 +54,7 @@ export function Sidebar({ isOpen, onClose }) {
         <div className="flex h-16 items-center justify-between px-6 border-b border-slate-100">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
             <img
-              src="/caresync-logo-icon.png"
+              src={caresyncLogoIcon}
               alt="CareSync Logo"
               className="h-10 w-auto object-contain flex-shrink-0 group-hover:scale-105 transition-transform"
             />

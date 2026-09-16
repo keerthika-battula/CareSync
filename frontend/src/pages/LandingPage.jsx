@@ -19,6 +19,7 @@ import {
   Shield
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import caresyncLogoIcon from '../assets/caresync-logo-icon.png';
 
 export default function LandingPage() {
   return (
@@ -28,7 +29,7 @@ export default function LandingPage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3 group">
             <img
-              src="/caresync-logo-icon.png"
+              src={caresyncLogoIcon}
               alt="CareSync Logo"
               className="h-10 w-auto object-contain flex-shrink-0 group-hover:scale-105 transition-transform"
             />
@@ -308,9 +309,9 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-800 pb-8">
             <div className="flex items-center gap-3">
               <img
-                src="/caresync-logo-icon.png"
+                src={caresyncLogoIcon}
                 alt="CareSync Logo"
-                className="h-10 w-10 object-contain"
+                className="h-10 w-auto object-contain"
               />
               <div>
                 <span className="text-lg font-extrabold text-white">CareSync</span>

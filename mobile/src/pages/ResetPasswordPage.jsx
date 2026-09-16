@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
+import caresyncLogoFull from '../assets/caresync-logo-full-transparent.png';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -68,7 +69,7 @@ export default function ResetPasswordPage() {
         <div className="text-center space-y-3">
           <Link to="/" className="inline-block group transition-transform hover:scale-105">
             <img
-              src="/caresync-logo-full-transparent.png"
+              src={caresyncLogoFull}
               alt="CareSync — Your Care. In Sync. On Time."
               className="h-28 w-auto mx-auto object-contain drop-shadow-sm"
             />

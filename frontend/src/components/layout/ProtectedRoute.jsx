@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import caresyncLogoIcon from '../../assets/caresync-logo-icon.png';
 
 export default function ProtectedRoute({ children, requiredRole, requireAdmin = false }) {
   const { isAuthenticated, isLoading, isAdmin, user } = useAuth();
@@ -11,7 +12,7 @@ export default function ProtectedRoute({ children, requiredRole, requireAdmin = 
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4 text-center">
           <img
-            src="/caresync-logo-icon.png"
+            src={caresyncLogoIcon}
             alt="CareSync Logo"
             className="h-16 w-16 object-contain animate-pulse"
           />

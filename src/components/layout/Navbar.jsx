@@ -3,6 +3,7 @@ import { Menu, Pill, Calendar, FileUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../ui/Button';
+import caresyncLogoIcon from '../../assets/caresync-logo-icon.png';
 
 export function Navbar({ onMenuToggle }) {
   const { user } = useAuth();
@@ -37,7 +38,7 @@ export function Navbar({ onMenuToggle }) {
           onClick={() => navigate('/dashboard')}
         >
           <img
-            src="/caresync-logo-icon.png"
+            src={caresyncLogoIcon}
             alt="CareSync Logo"
             className="h-8 w-auto object-contain flex-shrink-0 group-hover:scale-105 transition-transform"
           />
