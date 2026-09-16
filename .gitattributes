@@ -1,0 +1,22 @@
+# Auto-detect text files and perform LF normalization
+* text=auto eol=lf
+
+# Frontend: React.js / JavaScript / JSX / CSS
+*.js text linguist-language=JavaScript
+*.jsx text linguist-language=JavaScript
+*.css text linguist-language=CSS
+*.html text linguist-language=HTML
+*.json text linguist-language=JSON
+*.svg text linguist-language=SVG
+
+# Backend: Java / Spring Boot / SQL
+*.java text linguist-language=Java
+*.sql text linguist-language=SQL
+*.xml text linguist-language=XML
+*.properties text linguist-language=Properties
+
+# Mark migrations and config as data
+*.sql linguist-detectable=true
+*.java linguist-detectable=true
+*.jsx linguist-detectable=true
+*.js linguist-detectable=true

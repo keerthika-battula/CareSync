@@ -40,50 +40,15 @@ firebase-service-account.json
 *.jks
 
 # Build artifacts
-# Backend (Maven)
+# Backend (Maven & Java Spring Boot)
 target/
 **/target/
 backend/target/
 *.jar
 *.war
+.flattened-pom.xml
 
-# Flutter / Dart
-build/
-**/build/
-mobile/build/
-.dart_tool/
-**/.dart_tool/
-mobile/.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
-.pub/
-.metadata
-
-# Ephemeral build directories
-**/ephemeral/
-**/Flutter/ephemeral/
-mobile/ios/Flutter/ephemeral/
-mobile/macos/Flutter/ephemeral/
-mobile/linux/flutter/ephemeral/
-mobile/windows/flutter/ephemeral/
-
-# Platform specific build dirs
-mobile/ios/Flutter/Flutter.framework
-mobile/android/app/build/
-mobile/linux/build/
-mobile/macos/build/
-mobile/windows/build/
-
-# Gradle files (if any)
-.gradle/
-**/.gradle/
-mobile/.gradle/
-local.properties
-**/local.properties
-
-# Node.js / Frontend
+# Frontend (Node.js / React / Vite)
 node_modules/
 **/node_modules/
 dist/
