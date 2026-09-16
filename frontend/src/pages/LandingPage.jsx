@@ -30,7 +30,7 @@ export default function LandingPage() {
             <img
               src="/caresync-logo-icon.png"
               alt="CareSync Logo"
-              className="h-10 w-10 rounded-xl object-contain shadow-md shadow-indigo-100 border border-slate-100 group-hover:scale-105 transition-transform"
+              className="h-10 w-10 object-contain group-hover:scale-105 transition-transform"
             />
             <div>
               <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight block">
@@ -310,7 +310,7 @@ export default function LandingPage() {
               <img
                 src="/caresync-logo-icon.png"
                 alt="CareSync Logo"
-                className="h-10 w-10 rounded-xl object-contain bg-white/10 p-1 border border-slate-700/60"
+                className="h-10 w-10 object-contain"
               />
               <div>
                 <span className="text-lg font-extrabold text-white">CareSync</span>

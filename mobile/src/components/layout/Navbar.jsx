@@ -38,7 +38,7 @@ export function Navbar({ onMenuToggle }) {
           <img
             src="/caresync-logo-icon.png"
             alt="CareSync Logo"
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl object-contain shadow-md shadow-indigo-100 border border-slate-100 group-hover:scale-105 transition-transform"
+            className="h-9 w-9 sm:h-10 sm:w-10 object-contain group-hover:scale-105 transition-transform"
           />
           <span className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 leading-none">
             Care<span className="text-indigo-600">Sync</span>

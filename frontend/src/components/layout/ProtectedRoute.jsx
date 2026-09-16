@@ -13,7 +13,7 @@ export default function ProtectedRoute({ children, requiredRole, requireAdmin = 
           <img
             src="/caresync-logo-icon.png"
             alt="CareSync Logo"
-            className="h-16 w-16 rounded-2xl object-contain shadow-lg shadow-indigo-100 border border-slate-100 animate-pulse"
+            className="h-16 w-16 object-contain animate-pulse"
           />
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
