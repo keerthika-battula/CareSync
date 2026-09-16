@@ -61,13 +61,7 @@ export default function App() {
             />
             <Route
               path="/reminders"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <RemindersPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/medicines?tab=schedule" replace />}
             />
             <Route
               path="/appointments"

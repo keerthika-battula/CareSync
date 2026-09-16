@@ -23,8 +23,7 @@ export function Sidebar({ isOpen, onClose }) {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Medicines', path: '/medicines', icon: Pill },
-    { name: 'Doses & Reminders', path: '/reminders', icon: Clock },
+    { name: 'Medicines & Doses', path: '/medicines', icon: Pill },
     { name: 'Visits & Appointments', path: '/appointments', icon: Calendar },
     { name: 'Care Circle / Family', path: '/family', icon: Users },
     { name: 'Health Documents', path: '/documents', icon: FileText },

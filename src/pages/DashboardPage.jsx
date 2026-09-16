@@ -263,7 +263,7 @@ export default function DashboardPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/reminders')}
+              onClick={() => navigate('/medicines?tab=schedule')}
               className="text-indigo-600 hover:text-indigo-700"
             >
               View Full Schedule
