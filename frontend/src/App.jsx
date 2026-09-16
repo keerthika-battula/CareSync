@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { ToastProvider } from '@/context/ToastContext';
+import { PWAInstallProvider } from '@/context/PWAInstallContext';
+import { PWAInstallModal } from '@/components/pwa/PWAInstallModal';
 
 // Layout & Protection
 import MainLayout from '@/components/layout/MainLayout';
@@ -30,95 +32,98 @@ export default function App() {
     <BrowserRouter>
       <ToastProvider>
         <AuthProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <PWAInstallProvider>
+            <PWAInstallModal />
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-            {/* Protected Routes (Require Login) */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <DashboardPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/medicines"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <MedicinesPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reminders"
-              element={<Navigate to="/medicines?tab=schedule" replace />}
-            />
-            <Route
-              path="/appointments"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <AppointmentsPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/family"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <FamilyPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/documents"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <DocumentsPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <ProfilePage />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected Routes (Require Login) */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <DashboardPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/medicines"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <MedicinesPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reminders"
+                element={<Navigate to="/medicines?tab=schedule" replace />}
+              />
+              <Route
+                path="/appointments"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <AppointmentsPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/family"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <FamilyPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/documents"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <DocumentsPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <ProfilePage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Admin-only Route */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requiredRole="ADMIN">
-                  <MainLayout>
-                    <AdminPage />
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
+              {/* Admin-only Route */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requiredRole="ADMIN">
+                    <MainLayout>
+                      <AdminPage />
+                    </MainLayout>
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Fallback 404 */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+              {/* Fallback 404 */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </PWAInstallProvider>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>

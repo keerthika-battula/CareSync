@@ -10,15 +10,18 @@ import {
   ShieldAlert,
   User,
   LogOut,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { usePWAInstall } from '../../context/PWAInstallContext';
 import { Badge } from '../ui/Badge';
 import { cn } from '../../utils/cn';
 import caresyncLogoIcon from '../../assets/caresync-logo-icon.png';
 
 export function Sidebar({ isOpen, onClose }) {
   const { user, isAdmin, logout } = useAuth();
+  const { isInstalled, promptInstall } = usePWAInstall();
   const navigate = useNavigate();
 
   const navItems = [
@@ -115,8 +118,26 @@ export function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* User Card & Logout Footer */}
-        <div className="border-t border-slate-100 p-4">
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 mb-2">
+        <div className="border-t border-slate-100 p-4 space-y-2.5">
+          {!isInstalled && (
+            <button
+              onClick={() => {
+                promptInstall();
+                if (onClose) onClose();
+              }}
+              className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50/90 hover:bg-indigo-100 border border-indigo-100 transition-all shadow-sm group"
+            >
+              <div className="flex items-center gap-2.5">
+                <Download className="h-4 w-4 text-indigo-600 group-hover:scale-110 transition-transform" />
+                <span>Install CareSync</span>
+              </div>
+              <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-200/70 text-indigo-800">
+                PWA
+              </span>
+            </button>
+          )}
+
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm">
                 {user?.firstName ? user.firstName[0].toUpperCase() : 'U'}

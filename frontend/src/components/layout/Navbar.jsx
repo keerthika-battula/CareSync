@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Pill, Calendar, FileUp } from 'lucide-react';
+import { Menu, Pill, Calendar, FileUp, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { usePWAInstall } from '../../context/PWAInstallContext';
 import { Button } from '../ui/Button';
 import caresyncLogoIcon from '../../assets/caresync-logo-icon.png';
 
 export function Navbar({ onMenuToggle }) {
   const { user } = useAuth();
+  const { isInstalled, promptInstall } = usePWAInstall();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState('');
 
@@ -58,6 +60,19 @@ export function Navbar({ onMenuToggle }) {
 
       {/* Center/Right Quick Actions & User Avatar */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {!isInstalled && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={promptInstall}
+            className="inline-flex items-center gap-1.5 border-indigo-200 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/90 shadow-sm"
+            title="Install CareSync App"
+          >
+            <Download className="h-3.5 w-3.5 text-indigo-600" />
+            <span className="hidden sm:inline font-semibold">Install App</span>
+          </Button>
+        )}
+
         <Button
           variant="secondary"
           size="sm"

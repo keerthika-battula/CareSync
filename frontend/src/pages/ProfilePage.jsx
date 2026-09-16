@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   User, Mail, Shield, Lock, KeyRound, CheckCircle2, 
   AlertCircle, LogOut, HeartPulse, Eye, EyeOff, Pencil, X,
-  Copy, Check
+  Copy, Check, Smartphone, Download
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -10,11 +10,13 @@ import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { usePWAInstall } from '@/context/PWAInstallContext';
 import { authApi } from '@/services/api';
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuth();
   const { addToast } = useToast();
+  const { isInstalled, promptInstall } = usePWAInstall();
 
   // Personal Details Edit State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -378,6 +380,48 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Progressive Web App (PWA) Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-indigo-600" />
+            <CardTitle>CareSync Application & PWA</CardTitle>
+          </div>
+          <CardDescription>
+            Install CareSync as a standalone application on your phone, tablet, or computer for fast access and offline readiness
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-800 text-sm">App Installation Status:</span>
+                {isInstalled ? (
+                  <Badge variant="success">Installed (Standalone)</Badge>
+                ) : (
+                  <Badge variant="warning">Ready to Install</Badge>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">
+                {isInstalled
+                  ? 'CareSync is currently running in standalone app mode with instant launch and cached resources.'
+                  : 'Install CareSync directly to your home screen or dock for quick 1-tap access, clean fullscreen view, and offline shell caching.'}
+              </p>
+            </div>
+            {!isInstalled && (
+              <Button
+                type="button"
+                onClick={promptInstall}
+                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Install CareSync App
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
