@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   User, Mail, Shield, Lock, KeyRound, CheckCircle2, 
-  AlertCircle, LogOut, HeartPulse, Eye, EyeOff, Pencil, X
+  AlertCircle, LogOut, HeartPulse, Eye, EyeOff, Pencil, X,
+  Copy, Check
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -57,6 +58,37 @@ export default function ProfilePage() {
       addToast(err.message || 'Failed to update personal details', 'error');
     } finally {
       setSubmittingProfile(false);
+    }
+  };
+
+  const [copiedId, setCopiedId] = useState(false);
+
+  const handleCopyAccountId = async () => {
+    const accountId = user?.id;
+    if (!accountId) {
+      addToast('No Account ID available to copy', 'warning');
+      return;
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(accountId);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = accountId;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedId(true);
+      addToast('Account ID copied to clipboard', 'success');
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch (err) {
+      addToast('Failed to copy Account ID to clipboard', 'error');
     }
   };
 
@@ -224,9 +256,32 @@ export default function ProfilePage() {
                 <span className="font-semibold text-slate-900">{user?.role || 'USER'}</span>
               </div>
 
-              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-                <span className="text-xs text-slate-500 block mb-1">Account ID</span>
-                <span className="font-mono text-xs text-slate-700">{user?.id || 'Active Session'}</span>
+              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs text-slate-500 block mb-1">Account ID</span>
+                  <span className="font-mono text-xs text-slate-700 break-all select-all block">
+                    {user?.id || 'Active Session'}
+                  </span>
+                </div>
+                {user?.id && (
+                  <button
+                    type="button"
+                    onClick={handleCopyAccountId}
+                    aria-label="Copy Account ID"
+                    title={copiedId ? "Account ID copied" : "Copy Account ID"}
+                    className={`p-1.5 rounded-md transition-all flex items-center justify-center shrink-0 ${
+                      copiedId
+                        ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300'
+                        : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200/80 active:scale-95'
+                    }`}
+                  >
+                    {copiedId ? (
+                      <Check className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           )}
