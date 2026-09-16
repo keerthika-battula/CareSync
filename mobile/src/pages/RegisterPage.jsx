@@ -47,8 +47,8 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     const timer = setTimeout(() => {
-      setStatusNote('Creating your account on CareSync servers... (Free-tier instances may take a few seconds on initial wake-up)');
-    }, 2500);
+      setStatusNote('Connecting to CareSync...');
+    }, 1000);
 
     try {
       await register({

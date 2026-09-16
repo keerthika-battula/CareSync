@@ -1,10 +1,9 @@
-const API_BASE_URL = 
+const RAW_BASE_URL = 
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? '' // use Vite proxy in dev
-    : 'https://caresync-4dfr.onrender.com' // live backend in prod
-  );
+  'https://caresync-4dfr.onrender.com';
+
+const API_BASE_URL = RAW_BASE_URL.replace(/\/+$/, '');
 
 export function getAuthToken() {
   return localStorage.getItem('caresync_token') || sessionStorage.getItem('caresync_token');
@@ -63,9 +62,9 @@ async function request(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // AbortController with 40-second timeout for server cold-starts
+  // AbortController with 35-second timeout for server cold-starts
   const controller = new AbortController();
-  const timeoutMs = options.timeout || 40000;
+  const timeoutMs = options.timeout || 35000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const config = {
@@ -101,13 +100,13 @@ async function request(endpoint, options = {}) {
     clearTimeout(timeoutId);
 
     if (error.name === 'AbortError') {
-      const timeoutErr = new Error('Server took too long to respond. The backend may be starting up—please try again.');
+      const timeoutErr = new Error('The server is taking too long to respond. Please try again.');
       timeoutErr.status = 504;
       throw timeoutErr;
     }
 
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      const netErr = new Error('Unable to connect to CareSync server. Please check your network or try again in a moment.');
+    if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('NetworkError') || error.message.includes('Failed to fetch'))) {
+      const netErr = new Error('Unable to connect to CareSync server. Please check your network connection and try again.');
       netErr.status = 0;
       throw netErr;
     }

@@ -35,10 +35,10 @@ export default function LoginPage() {
 
     setIsLoading(true);
 
-    // If backend takes more than 2.5s (e.g. Render cold start), display friendly note
+    // Show a short, clean loading note if request takes over 1 second
     const timer = setTimeout(() => {
-      setStatusNote('Connecting to secure CareSync servers... (Free-tier instances may take a few seconds on initial wake-up)');
-    }, 2500);
+      setStatusNote('Connecting to CareSync...');
+    }, 1000);
 
     try {
       await login(email.trim(), password, remember);
