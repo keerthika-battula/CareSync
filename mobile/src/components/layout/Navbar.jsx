@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Pill, Calendar, FileUp, Download } from 'lucide-react';
+import { Menu, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePWAInstall } from '../../context/PWAInstallContext';
@@ -72,36 +72,6 @@ export function Navbar({ onMenuToggle }) {
             <span className="hidden sm:inline font-semibold">Install App</span>
           </Button>
         )}
-
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => navigate('/medicines?action=add')}
-          className="hidden md:inline-flex border-indigo-100 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-50"
-        >
-          <Pill className="h-3.5 w-3.5 text-indigo-600" />
-          <span>+ Add Medicine</span>
-        </Button>
-
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => navigate('/appointments?action=add')}
-          className="hidden lg:inline-flex border-sky-100 text-sky-600 bg-sky-50/50 hover:bg-sky-50"
-        >
-          <Calendar className="h-3.5 w-3.5 text-sky-600" />
-          <span>Schedule Visit</span>
-        </Button>
-
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => navigate('/documents?action=upload')}
-          className="hidden 2xl:inline-flex border-emerald-100 text-emerald-600 bg-emerald-50/50 hover:bg-emerald-50"
-        >
-          <FileUp className="h-3.5 w-3.5 text-emerald-600" />
-          <span>Upload Document</span>
-        </Button>
 
         {/* Profile Avatar Quick Button */}
         <div
