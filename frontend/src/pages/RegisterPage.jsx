@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { Select } from '../components/ui/Select';
+import { FooterModal } from '../components/common/FooterModal';
 import caresyncLogoFull from '../assets/caresync-logo-full-transparent.png';
 
 export default function RegisterPage() {
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [statusNote, setStatusNote] = useState('');
   const [error, setError] = useState('');
+  const [footerModalType, setFooterModalType] = useState(null);
 
   const { register } = useAuth();
   const { showToast } = useToast();
@@ -191,7 +193,41 @@ export default function RegisterPage() {
             Sign In
           </Link>
         </p>
+
+        {/* Footer Links */}
+        <div className="flex items-center justify-center gap-3 text-xs text-slate-400 pt-2">
+          <button
+            type="button"
+            onClick={() => setFooterModalType('privacy')}
+            className="hover:text-indigo-600 hover:underline transition-colors cursor-pointer font-medium focus:outline-none"
+          >
+            Privacy Policy
+          </button>
+          <span className="text-slate-300 select-none">|</span>
+          <button
+            type="button"
+            onClick={() => setFooterModalType('terms')}
+            className="hover:text-indigo-600 hover:underline transition-colors cursor-pointer font-medium focus:outline-none"
+          >
+            Terms of Service
+          </button>
+          <span className="text-slate-300 select-none">|</span>
+          <button
+            type="button"
+            onClick={() => setFooterModalType('contact')}
+            className="hover:text-indigo-600 hover:underline transition-colors cursor-pointer font-medium focus:outline-none"
+          >
+            Contact
+          </button>
+        </div>
       </div>
+
+      {/* Footer Modal */}
+      <FooterModal
+        type={footerModalType}
+        isOpen={!!footerModalType}
+        onClose={() => setFooterModalType(null)}
+      />
     </div>
   );
 }

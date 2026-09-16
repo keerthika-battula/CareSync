@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Pill,
@@ -19,9 +19,11 @@ import {
   Shield
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { FooterModal } from '../components/common/FooterModal';
 import caresyncLogoIcon from '../assets/caresync-logo-icon.png';
 
 export default function LandingPage() {
+  const [footerModalType, setFooterModalType] = useState(null);
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white">
       {/* Top Navigation */}
@@ -332,15 +334,40 @@ export default function LandingPage() {
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <p>© 2026 CareSync Healthcare Platform. All rights reserved.</p>
             <div className="flex items-center gap-3 text-xs text-slate-400">
-              <span className="hover:text-slate-300 transition-colors cursor-pointer">Privacy Policy</span>
-              <span className="text-slate-700">|</span>
-              <span className="hover:text-slate-300 transition-colors cursor-pointer">Terms of Service</span>
-              <span className="text-slate-700">|</span>
-              <span className="hover:text-slate-300 transition-colors cursor-pointer">Contact</span>
+              <button
+                type="button"
+                onClick={() => setFooterModalType('privacy')}
+                className="hover:text-indigo-400 hover:underline transition-colors cursor-pointer font-medium focus:outline-none"
+              >
+                Privacy Policy
+              </button>
+              <span className="text-slate-700 select-none">|</span>
+              <button
+                type="button"
+                onClick={() => setFooterModalType('terms')}
+                className="hover:text-indigo-400 hover:underline transition-colors cursor-pointer font-medium focus:outline-none"
+              >
+                Terms of Service
+              </button>
+              <span className="text-slate-700 select-none">|</span>
+              <button
+                type="button"
+                onClick={() => setFooterModalType('contact')}
+                className="hover:text-indigo-400 hover:underline transition-colors cursor-pointer font-medium focus:outline-none"
+              >
+                Contact
+              </button>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* Interactive Footer Modal */}
+      <FooterModal
+        type={footerModalType}
+        isOpen={!!footerModalType}
+        onClose={() => setFooterModalType(null)}
+      />
     </div>
   );
 }
