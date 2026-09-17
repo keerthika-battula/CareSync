@@ -431,13 +431,17 @@ export default function ProfilePage() {
           <CardTitle className="text-rose-600">Session Management</CardTitle>
           <CardDescription>Sign out of your active browser session</CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center justify-between">
+        <CardContent className="flex items-center justify-between gap-4">
           <p className="text-xs text-slate-500">
             Sign out to terminate your current JWT authentication token on this device.
           </p>
-          <Button variant="danger" size="sm" onClick={logout}>
-            <LogOut className="w-4 h-4 mr-1.5" />
-            Sign Out
+          <Button
+            variant="danger"
+            onClick={logout}
+            className="w-[135px] h-[52px] shrink-0 px-4 rounded-xl flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium shadow-sm hover:shadow transition-all"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span>Sign Out</span>
           </Button>
         </CardContent>
       </Card>
