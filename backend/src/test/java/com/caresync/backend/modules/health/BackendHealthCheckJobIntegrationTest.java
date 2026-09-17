@@ -33,17 +33,17 @@ class BackendHealthCheckJobIntegrationTest {
     }
 
     @Test
-    @DisplayName("Verify Quartz scheduler registers the 5-minute recurring Trigger")
+    @DisplayName("Verify Quartz scheduler registers the 10-minute recurring Trigger")
     void testBackendHealthCheckTriggerIsRegistered() throws SchedulerException {
         TriggerKey triggerKey = TriggerKey.triggerKey("backendHealthCheckTrigger", "system-maintenance");
         assertTrue(scheduler.checkExists(triggerKey), "backendHealthCheckTrigger should be registered in Quartz scheduler");
 
         Trigger trigger = scheduler.getTrigger(triggerKey);
         assertNotNull(trigger);
-        assertTrue(trigger instanceof SimpleTrigger, "Trigger should be a SimpleTrigger configured with 5-minute interval");
+        assertTrue(trigger instanceof SimpleTrigger, "Trigger should be a SimpleTrigger configured with 10-minute interval");
 
         SimpleTrigger simpleTrigger = (SimpleTrigger) trigger;
-        assertEquals(5 * 60 * 1000L, simpleTrigger.getRepeatInterval(), "Repeat interval should be 5 minutes (300,000 ms)");
+        assertEquals(10 * 60 * 1000L, simpleTrigger.getRepeatInterval(), "Repeat interval should be 10 minutes (600,000 ms)");
     }
 
     @Test

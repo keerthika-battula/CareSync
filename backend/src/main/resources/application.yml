@@ -60,7 +60,8 @@ caresync:
   firebase:
     credentials-path: ${FIREBASE_CREDENTIALS:classpath:firebase-service-account.json}
   health-check:
-    external-ping-url: ${EXTERNAL_PING_URL:${HEALTH_CHECK_URL:}}
+    backend-ping-url: ${BACKEND_PING_URL:${EXTERNAL_PING_URL:https://caresync-4dfr.onrender.com/health}}
+    frontend-ping-url: ${FRONTEND_PING_URL:${EXTERNAL_FRONTEND_URL:https://caresync-web-rav8.onrender.com}}
     ping-enabled: ${EXTERNAL_PING_ENABLED:${HEALTH_CHECK_PING_ENABLED:true}}
 
 management:

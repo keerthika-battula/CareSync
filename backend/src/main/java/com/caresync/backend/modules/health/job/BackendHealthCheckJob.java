@@ -24,16 +24,21 @@ import java.sql.SQLException;
 import java.time.Duration;
 
 /**
- * Lightweight Quartz Job that runs every 5 minutes to verify backend health,
+ * Lightweight Quartz Job that runs every 10 minutes to verify backend health,
  * keep active database connection pools warm, monitor JVM resource usage, and
- * send an HTTP GET request to an external endpoint configured via environment variables.
+ * send independent HTTP GET keep-alive pings to both deployed Render services:
+ * 1. Backend: https://caresync-4dfr.onrender.com/health
+ * 2. Frontend: https://caresync-web-rav8.onrender.com
  *
  * =========================================================================================
- * ARCHITECTURE & ENVIRONMENT VARIABLE BINDING:
+ * ARCHITECTURE & RESILIENCE DESIGN:
  * =========================================================================================
- * - Reads EXTERNAL_PING_URL from the Render environment (or system property).
- * - Reads EXTERNAL_PING_ENABLED (defaults to true in production; false in test profile).
- * - All log statements sanitize URLs to prevent query token/credential leaks.
+ * - Outbound pings to Backend and Frontend are executed independently; failure or timeout
+ *   in one service does not prevent the other from being pinged.
+ * - Public responses and summary logs do not expose internal DB status ("DB: UP").
+ *   Internal connection pool validation is performed quietly.
+ * - All log statements sanitize URLs, logging strictly the target Host, Path, HTTP Status,
+ *   and Latency (ms) without exposing query parameters or tokens.
  * =========================================================================================
  */
 @Component
@@ -41,55 +46,90 @@ import java.time.Duration;
 @Slf4j
 public class BackendHealthCheckJob implements Job {
 
+    private static final String DEFAULT_BACKEND_URL = "https://caresync-4dfr.onrender.com/health";
+    private static final String DEFAULT_FRONTEND_URL = "https://caresync-web-rav8.onrender.com";
+
     @Autowired(required = false)
     private DataSource dataSource;
 
-    @Value("${EXTERNAL_PING_URL:${caresync.health-check.external-ping-url:}}")
-    private String externalPingUrl;
+    @Value("${caresync.health-check.backend-ping-url:${BACKEND_PING_URL:${EXTERNAL_PING_URL:https://caresync-4dfr.onrender.com/health}}}")
+    private String backendPingUrl;
 
-    @Value("${EXTERNAL_PING_ENABLED:${caresync.health-check.ping-enabled:true}}")
+    @Value("${caresync.health-check.frontend-ping-url:${FRONTEND_PING_URL:${EXTERNAL_FRONTEND_URL:https://caresync-web-rav8.onrender.com}}}")
+    private String frontendPingUrl;
+
+    @Value("${caresync.health-check.ping-enabled:${EXTERNAL_PING_ENABLED:${HEALTH_CHECK_PING_ENABLED:true}}}")
     private boolean pingEnabled;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(8))
             .build();
 
+    public record ProbeResult(
+            boolean success,
+            int statusCode,
+            long latencyMs,
+            String host,
+            String path,
+            String errorMessage
+    ) {}
+
     @PostConstruct
     public void init() {
-        String resolvedUrl = resolveTargetUrl();
         boolean resolvedEnabled = resolvePingEnabled();
-        String host = extractHost(resolvedUrl);
-        String path = extractPath(resolvedUrl);
+        String backendUrl = resolveBackendUrl();
+        String frontendUrl = resolveFrontendUrl();
+        String backendHost = extractHost(backendUrl);
+        String backendPath = extractPath(backendUrl);
+        String frontendHost = extractHost(frontendUrl);
+        String frontendPath = extractPath(frontendUrl);
 
-        if (resolvedEnabled && resolvedUrl != null && !resolvedUrl.isBlank()) {
-            log.info("[CareSync Health Job Config] Initialized. Ping Enabled: true | Target Host: [{}] | Path: [{}] | Interval: 5 minutes",
-                    host, path);
-        } else if (!resolvedEnabled) {
-            log.info("[CareSync Health Job Config] Initialized. Ping Enabled: false (Pings disabled for this profile/environment)");
+        if (resolvedEnabled) {
+            log.info("[CareSync Health Job Config] Initialized. Ping Enabled: true | Interval: 10 minutes | Backend: [{}{}] | Frontend: [{}{}]",
+                    backendHost, backendPath, frontendHost, frontendPath);
         } else {
-            log.warn("[CareSync Health Job Config] Initialized. Ping Enabled: true | Target URL: [UNCONFIGURED] -> Add EXTERNAL_PING_URL in Render Dashboard to enable external keep-alive pings");
+            log.info("[CareSync Health Job Config] Initialized. Ping Enabled: false (Pings disabled for this profile/environment)");
         }
     }
 
-    private String resolveTargetUrl() {
-        if (externalPingUrl != null && !externalPingUrl.trim().isEmpty()) {
-            return externalPingUrl.trim();
+    private String resolveBackendUrl() {
+        if (backendPingUrl != null && !backendPingUrl.trim().isEmpty()) {
+            return backendPingUrl.trim();
         }
-        String sysEnv = System.getenv("EXTERNAL_PING_URL");
-        if (sysEnv != null && !sysEnv.trim().isEmpty()) {
-            return sysEnv.trim();
+        String sysEnvBackend = System.getenv("BACKEND_PING_URL");
+        if (sysEnvBackend != null && !sysEnvBackend.trim().isEmpty()) {
+            return sysEnvBackend.trim();
         }
-        String sysEnvLower = System.getenv("external_ping_url");
-        if (sysEnvLower != null && !sysEnvLower.trim().isEmpty()) {
-            return sysEnvLower.trim();
+        String sysEnvExt = System.getenv("EXTERNAL_PING_URL");
+        if (sysEnvExt != null && !sysEnvExt.trim().isEmpty()) {
+            return sysEnvExt.trim();
         }
-        return null;
+        return DEFAULT_BACKEND_URL;
+    }
+
+    private String resolveFrontendUrl() {
+        if (frontendPingUrl != null && !frontendPingUrl.trim().isEmpty()) {
+            return frontendPingUrl.trim();
+        }
+        String sysEnvFrontend = System.getenv("FRONTEND_PING_URL");
+        if (sysEnvFrontend != null && !sysEnvFrontend.trim().isEmpty()) {
+            return sysEnvFrontend.trim();
+        }
+        String sysEnvExtFront = System.getenv("EXTERNAL_FRONTEND_URL");
+        if (sysEnvExtFront != null && !sysEnvExtFront.trim().isEmpty()) {
+            return sysEnvExtFront.trim();
+        }
+        return DEFAULT_FRONTEND_URL;
     }
 
     private boolean resolvePingEnabled() {
         String envEnabled = System.getenv("EXTERNAL_PING_ENABLED");
         if (envEnabled != null && !envEnabled.trim().isEmpty()) {
             return Boolean.parseBoolean(envEnabled.trim());
+        }
+        String envHealthEnabled = System.getenv("HEALTH_CHECK_PING_ENABLED");
+        if (envHealthEnabled != null && !envHealthEnabled.trim().isEmpty()) {
+            return Boolean.parseBoolean(envHealthEnabled.trim());
         }
         return pingEnabled;
     }
@@ -114,74 +154,80 @@ public class BackendHealthCheckJob implements Job {
         }
     }
 
+    private ProbeResult executeProbe(String targetUrl, String serviceName) {
+        if (targetUrl == null || targetUrl.isBlank()) {
+            return new ProbeResult(false, 0, 0, "N/A", "/", "URL unconfigured");
+        }
+        String host = extractHost(targetUrl);
+        String path = extractPath(targetUrl);
+        long start = System.currentTimeMillis();
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(targetUrl))
+                    .header("User-Agent", "CareSync-QuartzKeepAlive/1.0")
+                    .header("Accept", "application/json, text/html, text/plain, */*")
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            int statusCode = response.statusCode();
+            long latencyMs = System.currentTimeMillis() - start;
+            boolean success = statusCode >= 200 && statusCode < 400;
+
+            if (success) {
+                log.info("[CareSync Health Job] {} ping SUCCESS -> Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]",
+                        serviceName, host, path, statusCode, latencyMs);
+            } else {
+                log.warn("[CareSync Health Job] {} ping returned non-2xx -> Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]",
+                        serviceName, host, path, statusCode, latencyMs);
+            }
+            return new ProbeResult(success, statusCode, latencyMs, host, path, null);
+        } catch (Exception e) {
+            long latencyMs = System.currentTimeMillis() - start;
+            log.error("[CareSync Health Job] {} ping FAILED -> Host: [{}], Path: [{}], Error: [{}], Latency: [{}ms]",
+                    serviceName, host, path, e.getMessage(), latencyMs);
+            return new ProbeResult(false, 0, latencyMs, host, path, e.getMessage());
+        }
+    }
+
+    private String formatProbeSummary(boolean isEnabled, ProbeResult result) {
+        if (!isEnabled || result == null) {
+            return "SKIPPED/DISABLED";
+        }
+        String statusLabel = result.success() ? "UP" : "FAILED";
+        return String.format("%s (Host: [%s], Path: [%s], Status: [%d], Latency: [%dms])",
+                statusLabel, result.host(), result.path(), result.statusCode(), result.latencyMs());
+    }
+
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         long startTime = System.currentTimeMillis();
-        log.info("[CareSync Health Job] Starting 5-minute scheduled backend health self-check...");
+        log.info("[CareSync Health Job] Starting 10-minute scheduled backend & frontend health probe...");
 
-        boolean dbHealthy = false;
-        String dbError = null;
-
-        // 1. Check Database Connectivity (Lightweight connection probe)
+        // 1. Internal Database Connectivity Validation (Quiet internal check, not exposed in summary log)
         if (dataSource != null) {
             try (Connection connection = dataSource.getConnection()) {
-                if (connection.isValid(3)) {
-                    dbHealthy = true;
-                } else {
-                    dbError = "DataSource connection validation returned false (timeout 3s)";
-                }
+                connection.isValid(3);
             } catch (SQLException e) {
-                dbError = e.getMessage();
-                log.warn("[CareSync Health Job] Database probe encountered an exception: {}", e.getMessage());
+                log.debug("[CareSync Health Job] Internal DataSource probe encountered exception: {}", e.getMessage());
             }
-        } else {
-            dbHealthy = true;
         }
 
-        // 2. Perform Outbound HTTP GET Ping to External Endpoint (Read from EXTERNAL_PING_URL)
+        // 2. Perform Independent Outbound HTTP GET Pings (Backend & Frontend)
         boolean isEnabled = resolvePingEnabled();
-        String targetUrl = resolveTargetUrl();
-        boolean httpPingSuccess = false;
-        int httpStatusCode = 0;
-        long httpDurationMs = 0;
-        String targetHost = extractHost(targetUrl);
-        String targetPath = extractPath(targetUrl);
+        ProbeResult backendResult = null;
+        ProbeResult frontendResult = null;
 
         if (isEnabled) {
-            if (targetUrl != null && !targetUrl.isBlank()) {
-                long httpStart = System.currentTimeMillis();
-                try {
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(targetUrl))
-                            .header("User-Agent", "CareSync-ExternalPing/1.0")
-                            .header("Accept", "application/json, text/plain, */*")
-                            .timeout(Duration.ofSeconds(10))
-                            .GET()
-                            .build();
+            String backendUrl = resolveBackendUrl();
+            backendResult = executeProbe(backendUrl, "Backend");
 
-                    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                    httpStatusCode = response.statusCode();
-                    httpDurationMs = System.currentTimeMillis() - httpStart;
-
-                    if (httpStatusCode >= 200 && httpStatusCode < 400) {
-                        httpPingSuccess = true;
-                        log.info("[CareSync Health Job] External ping SUCCESS -> Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]",
-                                targetHost, targetPath, httpStatusCode, httpDurationMs);
-                    } else {
-                        log.warn("[CareSync Health Job] External ping returned non-2xx -> Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]",
-                                targetHost, targetPath, httpStatusCode, httpDurationMs);
-                    }
-                } catch (Exception e) {
-                    httpDurationMs = System.currentTimeMillis() - httpStart;
-                    log.error("[CareSync Health Job] External ping FAILED -> Host: [{}], Path: [{}], Error: [{}], Latency: [{}ms]",
-                            targetHost, targetPath, e.getMessage(), httpDurationMs);
-                }
-            } else {
-                log.warn("[CareSync Health Job] EXTERNAL_PING_URL environment variable is not configured or empty. External ping skipped. (Set EXTERNAL_PING_URL in Render Dashboard -> Environment to enable)");
-            }
+            String frontendUrl = resolveFrontendUrl();
+            frontendResult = executeProbe(frontendUrl, "Frontend");
         }
 
-        // 3. Collect JVM Metrics (Heap Memory & Thread count)
+        // 3. Collect JVM Metrics
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
         long usedMemoryMb = heapUsage.getUsed() / (1024 * 1024);
@@ -193,14 +239,13 @@ public class BackendHealthCheckJob implements Job {
 
         long durationMs = System.currentTimeMillis() - startTime;
 
-        log.info("[CareSync Health Job] Health check cycle complete (total: {}ms) | DB: {} | External Ping: {} (Host: [{}], Path: [{}], Status: [{}], Latency: [{}ms]) | Heap: {}MB/{}MB | Active Threads: {} | Uptime: {}s",
+        String backendSummary = formatProbeSummary(isEnabled, backendResult);
+        String frontendSummary = formatProbeSummary(isEnabled, frontendResult);
+
+        log.info("[CareSync Health Job] Health check cycle complete (total: {}ms) | Backend: {} | Frontend: {} | Heap: {}MB/{}MB | Active Threads: {} | Uptime: {}s",
                 durationMs,
-                dbHealthy ? "UP" : "DOWN (" + dbError + ")",
-                httpPingSuccess ? "UP" : (isEnabled && targetUrl != null && !targetUrl.isBlank() ? "FAILED" : "SKIPPED/UNSET"),
-                targetHost,
-                targetPath,
-                httpStatusCode,
-                httpDurationMs,
+                backendSummary,
+                frontendSummary,
                 usedMemoryMb,
                 maxMemoryMb,
                 activeThreads,
