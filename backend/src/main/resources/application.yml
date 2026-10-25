@@ -4,6 +4,12 @@ spring:
     username: ${DB_USER:caresync_user}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 0
+      idle-timeout: 120000
+      connection-timeout: 30000
+      max-lifetime: 900000
+      maximum-pool-size: 5
 
   jpa:
     hibernate:
@@ -62,7 +68,7 @@ caresync:
   health-check:
     backend-ping-url: ${BACKEND_PING_URL:${EXTERNAL_PING_URL:https://caresync-4dfr.onrender.com/health}}
     frontend-ping-url: ${FRONTEND_PING_URL:${EXTERNAL_FRONTEND_URL:https://caresync-web-rav8.onrender.com}}
-    ping-enabled: ${EXTERNAL_PING_ENABLED:${HEALTH_CHECK_PING_ENABLED:true}}
+    ping-enabled: ${EXTERNAL_PING_ENABLED:${HEALTH_CHECK_PING_ENABLED:false}}
 
 management:
   endpoints:

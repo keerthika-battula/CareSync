@@ -58,7 +58,7 @@ public class BackendHealthCheckJob implements Job {
     @Value("${caresync.health-check.frontend-ping-url:${FRONTEND_PING_URL:${EXTERNAL_FRONTEND_URL:https://caresync-web-rav8.onrender.com}}}")
     private String frontendPingUrl;
 
-    @Value("${caresync.health-check.ping-enabled:${EXTERNAL_PING_ENABLED:${HEALTH_CHECK_PING_ENABLED:true}}}")
+    @Value("${caresync.health-check.ping-enabled:${EXTERNAL_PING_ENABLED:${HEALTH_CHECK_PING_ENABLED:false}}}")
     private boolean pingEnabled;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -202,10 +202,16 @@ public class BackendHealthCheckJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
+        boolean isEnabled = resolvePingEnabled();
+        if (!isEnabled) {
+            log.debug("[CareSync Health Job] External keep-alive pings and DB keep-warm are disabled to preserve free-tier compute limits.");
+            return;
+        }
+
         long startTime = System.currentTimeMillis();
         log.info("[CareSync Health Job] Starting 10-minute scheduled backend & frontend health probe...");
 
-        // 1. Internal Database Connectivity Validation (Quiet internal check, not exposed in summary log)
+        // 1. Internal Database Connectivity Validation
         if (dataSource != null) {
             try (Connection connection = dataSource.getConnection()) {
                 connection.isValid(3);
@@ -215,17 +221,11 @@ public class BackendHealthCheckJob implements Job {
         }
 
         // 2. Perform Independent Outbound HTTP GET Pings (Backend & Frontend)
-        boolean isEnabled = resolvePingEnabled();
-        ProbeResult backendResult = null;
-        ProbeResult frontendResult = null;
+        String backendUrl = resolveBackendUrl();
+        ProbeResult backendResult = executeProbe(backendUrl, "Backend");
 
-        if (isEnabled) {
-            String backendUrl = resolveBackendUrl();
-            backendResult = executeProbe(backendUrl, "Backend");
-
-            String frontendUrl = resolveFrontendUrl();
-            frontendResult = executeProbe(frontendUrl, "Frontend");
-        }
+        String frontendUrl = resolveFrontendUrl();
+        ProbeResult frontendResult = executeProbe(frontendUrl, "Frontend");
 
         // 3. Collect JVM Metrics
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
