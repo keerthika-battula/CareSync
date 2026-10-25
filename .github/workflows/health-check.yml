@@ -1,0 +1,40 @@
+name: CareSync Scheduled Warmup (9 AM - 9 PM IST)
+
+on:
+  schedule:
+    # Runs every 12 minutes between 04:00 UTC and 15:59 UTC (9:30 AM to 9:30 PM IST)
+    # Sleeps overnight to stay well within Render 750-hour and Neon 100-hour free tiers
+    - cron: "*/12 4-15 * * *"
+  workflow_dispatch:
+
+jobs:
+  warmup-ping:
+    name: Daytime Warmup Ping
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Send Warmup Ping
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL || vars.BACKEND_URL || 'https://caresync-4dfr.onrender.com' }}
+        run: |
+          TARGET_URL="${BACKEND_URL%/}/api/v1/health"
+          echo "Sending warmup ping to $TARGET_URL..."
+
+          RESPONSE=$(curl --silent --show-error \
+            --write-out "\nHTTP_STATUS:%{http_code}\nTIME_TOTAL:%{time_total}s" \
+            --max-time 60 \
+            --header "Accept: application/json" \
+            --header "User-Agent: CareSync-Warmup/1.0" \
+            "$TARGET_URL" || echo -e "\nHTTP_STATUS:000\nTIME_TOTAL:0.00s")
+
+          STATUS=$(echo "$RESPONSE" | tr -d '\r' | sed -n -e 's/^HTTP_STATUS://p')
+          TIME=$(echo "$RESPONSE" | tr -d '\r' | sed -n -e 's/^TIME_TOTAL://p')
+
+          echo "Response HTTP Status: $STATUS | Response Time: ${TIME}s"
+
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "✓ CareSync Backend is active and awake!"
+          else
+            echo "⚠ Backend returned status $STATUS (Instance may be waking up or suspended until the 1st)"
+          fi
