@@ -1,40 +1,61 @@
-name: CareSync Scheduled Warmup (9 AM - 9 PM IST)
+name: CareSync Daytime Warmup (10:00 AM - 8:00 PM IST)
 
 on:
   schedule:
-    # Runs every 12 minutes between 04:00 UTC and 15:59 UTC (9:30 AM to 9:30 PM IST)
-    # Sleeps overnight to stay well within Render 750-hour and Neon 100-hour free tiers
-    - cron: "*/12 4-15 * * *"
+    # Exact 10:00 AM to 8:00 PM IST (04:30 UTC to 14:30 UTC)
+    # Every 12 minutes:
+    - cron: "30,42,54 4 * * *"   # 04:30 - 04:59 UTC (10:00 AM - 10:29 AM IST)
+    - cron: "*/12 5-13 * * *"     # 05:00 - 13:59 UTC (10:30 AM - 7:29 PM IST)
+    - cron: "6,18,30 14 * * *"    # 14:00 - 14:30 UTC (7:36 PM - 8:00 PM IST)
   workflow_dispatch:
 
 jobs:
   warmup-ping:
-    name: Daytime Warmup Ping
+    name: Warmup Backend & Frontend
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-      - name: Send Warmup Ping
+      - name: Ping Backend and Frontend Services
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL || vars.BACKEND_URL || 'https://caresync-4dfr.onrender.com' }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL || vars.FRONTEND_URL || 'https://caresync-web-rav8.onrender.com' }}
         run: |
-          TARGET_URL="${BACKEND_URL%/}/api/v1/health"
-          echo "Sending warmup ping to $TARGET_URL..."
+          TARGET_BACKEND="${BACKEND_URL%/}/api/v1/health"
+          TARGET_FRONTEND="${FRONTEND_URL%/}"
 
-          RESPONSE=$(curl --silent --show-error \
-            --write-out "\nHTTP_STATUS:%{http_code}\nTIME_TOTAL:%{time_total}s" \
-            --max-time 60 \
-            --header "Accept: application/json" \
-            --header "User-Agent: CareSync-Warmup/1.0" \
-            "$TARGET_URL" || echo -e "\nHTTP_STATUS:000\nTIME_TOTAL:0.00s")
+          echo "=========================================="
+          echo "CareSync Warmup (10:00 AM - 8:00 PM IST)"
+          echo "Target Backend:  $TARGET_BACKEND"
+          echo "Target Frontend: $TARGET_FRONTEND"
+          echo "=========================================="
 
-          STATUS=$(echo "$RESPONSE" | tr -d '\r' | sed -n -e 's/^HTTP_STATUS://p')
-          TIME=$(echo "$RESPONSE" | tr -d '\r' | sed -n -e 's/^TIME_TOTAL://p')
+          ping_service() {
+            local NAME="$1"
+            local URL="$2"
 
-          echo "Response HTTP Status: $STATUS | Response Time: ${TIME}s"
+            echo ""
+            echo "Pinging $NAME ($URL)..."
 
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-            echo "✓ CareSync Backend is active and awake!"
-          else
-            echo "⚠ Backend returned status $STATUS (Instance may be waking up or suspended until the 1st)"
-          fi
+            RESPONSE=$(curl --silent --show-error \
+              --write-out "\nHTTP_STATUS:%{http_code}\nTIME_TOTAL:%{time_total}s" \
+              --max-time 60 \
+              --header "Accept: application/json, text/html, */*" \
+              --header "User-Agent: CareSync-Warmup/2.0" \
+              "$URL" || echo -e "\nHTTP_STATUS:000\nTIME_TOTAL:0.00s")
+
+            STATUS=$(echo "$RESPONSE" | tr -d '\r' | sed -n -e 's/^HTTP_STATUS://p')
+            TIME=$(echo "$RESPONSE" | tr -d '\r' | sed -n -e 's/^TIME_TOTAL://p')
+
+            echo "Response HTTP Status: $STATUS | Response Time: ${TIME}s"
+
+            if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+              echo "✓ $NAME is active and awake!"
+            else
+              echo "⚠ $NAME returned status $STATUS (May be waking up or suspended until the 1st)"
+            fi
+          }
+
+          # Ping both backend and frontend every 12 min between 10:00 AM and 8:00 PM IST
+          ping_service "Backend API" "$TARGET_BACKEND"
+          ping_service "Frontend Web" "$TARGET_FRONTEND"
